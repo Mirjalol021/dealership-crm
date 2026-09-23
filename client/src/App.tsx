@@ -25,6 +25,9 @@ import { ServiceVisitsPage } from './pages/ServiceVisitsPage';
 import { CustomersToCallPage } from './pages/CustomersToCallPage';
 import { StockMovementsPage } from './pages/StockMovementsPage';
 import { AfterSalesSoldCarsPage } from './pages/AfterSalesSoldCarsPage';
+import { ReportsPage } from './pages/ReportsPage';
+import { ImportPage } from './pages/ImportPage';
+import { LeadFormsPage } from './pages/LeadFormsPage';
 
 function Home() {
   const { user } = useAuth();
@@ -69,7 +72,9 @@ export function App() {
         <Route path="/sold-cars-finance" element={<PlaceholderPage labelKey="soldCarsFinance" />} />
         <Route path="/distributor-bonuses" element={<KpiBonusesPage />} />
         <Route path="/finance/settings" element={<FinanceSettingsPage />} />
-        <Route path="/reports" element={<PlaceholderPage labelKey="reports" />} />
+        <Route path="/reports" element={<ReportsPage />} />
+        <Route path="/import" element={<ImportPage />} />
+        <Route path="/lead-forms" element={<LeadFormsPage />} />
         <Route path="/users" element={<UsersPage />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Route>

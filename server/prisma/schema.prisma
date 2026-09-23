@@ -797,3 +797,58 @@ model AfterSalesStockAdjustment {
 
   @@index([itemId])
 }
+
+// ---------- INTEGRATIONS & IMPORTS (§56-§64) ----------
+
+// Meta Lead Ads connector settings (§56). Single row per source+dealership.
+model MetaConnectorSettings {
+  id           String   @id @default(cuid())
+  dealershipId String?
+  brandId      String?
+  verifyToken  String   // webhook verify token
+  appSecret    String?  // for signature validation
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// Telegram connector settings (§57).
+model TelegramConnectorSettings {
+  id           String   @id @default(cuid())
+  dealershipId String?
+  brandId      String?
+  botToken     String?
+  webhookSecret String   @unique
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// Dedup reference for external leads (§56, §57).
+model ExternalLeadReference {
+  id         String @id @default(cuid())
+  source     LeadSource
+  externalId String
+  leadId     String
+  createdAt  DateTime @default(now())
+
+  @@unique([source, externalId])
+  @@index([leadId])
+}
+
+// Bulk import batches (§64).
+model ImportBatch {
+  id            String   @id @default(cuid())
+  type          String   // leads | customers | inventory | sold_cars | aftersales_stock
+  uploadedById  String
+  status        String   @default("PREVIEW") // PREVIEW | CONFIRMED | FAILED
+  totalRows     Int      @default(0)
+  validRows     Int      @default(0)
+  invalidRows   Int      @default(0)
+  duplicateRows Int      @default(0)
+  summary       Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([type])
+}
