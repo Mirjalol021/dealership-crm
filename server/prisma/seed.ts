@@ -194,6 +194,26 @@ async function main() {
     console.log(`Demo AfterSales items created: ${items.length}`);
   }
 
+  // Additional demo users for every role (for testing).
+  const extraUsers: { name: string; email: string; role: 'HEAD_OF_SALES' | 'CALL_CENTER' | 'FINANCE'; password: string }[] = [
+    { name: 'Bekzod Rahbar', email: 'head@crm.local', role: 'HEAD_OF_SALES', password: 'head12345' },
+    { name: 'Lola Callcenter', email: 'callcenter@crm.local', role: 'CALL_CENTER', password: 'call12345' },
+    { name: 'Rustam Moliya', email: 'finance@crm.local', role: 'FINANCE', password: 'finance12345' },
+  ];
+  for (const u of extraUsers) {
+    await prisma.user.upsert({
+      where: { email: u.email },
+      update: {},
+      create: {
+        name: u.name, email: u.email, role: u.role, preferredLanguage: 'uz', active: true,
+        passwordHash: await bcrypt.hash(u.password, 12),
+        dealershipAccess: { create: [{ dealershipId: dealership.id }] },
+        brandAccess: { create: brands.map((b) => ({ brandId: b.id })) },
+      },
+    });
+  }
+  console.log('Demo role users ensured: head@crm.local, callcenter@crm.local, finance@crm.local');
+
   console.log('Seed done.');
 }
 
