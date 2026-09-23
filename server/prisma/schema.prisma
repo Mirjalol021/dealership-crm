@@ -1,0 +1,134 @@
+// Dealership CRM V2 — Prisma schema
+// Phase 1 (Foundation) entities only. Later phases append their own entities.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- ENUMS ----------
+
+enum Role {
+  SUPER_ADMIN
+  HEAD_OF_SALES
+  SALES_MANAGER
+  CALL_CENTER
+  SERVICE_STAFF
+  FINANCE
+}
+
+enum Language {
+  uz
+  ru
+  en
+}
+
+// ---------- CORE ----------
+
+model Brand {
+  id        String   @id @default(cuid())
+  name      String
+  code      String   @unique
+  active    Boolean  @default(true)
+  logoUrl   String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  dealershipLinks DealershipBrand[]
+  userLinks       UserBrandAccess[]
+
+  @@index([active, sortOrder])
+}
+
+model Dealership {
+  id             String   @id @default(cuid())
+  dealershipName String
+  cityRegion     String
+  address        String?
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  brandLinks DealershipBrand[]
+  userLinks  UserDealershipAccess[]
+
+  @@index([active])
+}
+
+// Brands available at a dealership (multi-select in Settings -> Dealerships)
+model DealershipBrand {
+  dealershipId String
+  brandId      String
+  createdAt    DateTime @default(now())
+
+  dealership Dealership @relation(fields: [dealershipId], references: [id], onDelete: Cascade)
+  brand      Brand      @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@id([dealershipId, brandId])
+  @@index([brandId])
+}
+
+model User {
+  id                String   @id @default(cuid())
+  name              String
+  email             String   @unique
+  phone             String?
+  passwordHash      String
+  role              Role
+  preferredLanguage Language @default(uz)
+  active            Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  dealershipAccess UserDealershipAccess[]
+  brandAccess      UserBrandAccess[]
+  sessions         Session[]
+
+  @@index([role, active])
+}
+
+model UserDealershipAccess {
+  userId       String
+  dealershipId String
+  createdAt    DateTime @default(now())
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dealership Dealership @relation(fields: [dealershipId], references: [id], onDelete: Cascade)
+
+  @@id([userId, dealershipId])
+  @@index([dealershipId])
+}
+
+model UserBrandAccess {
+  userId    String
+  brandId   String
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@id([userId, brandId])
+  @@index([brandId])
+}
+
+// ---------- AUTH ----------
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  userAgent String?
+  ip        String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
