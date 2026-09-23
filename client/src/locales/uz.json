@@ -1,0 +1,68 @@
+{
+  "app": { "name": "Dilerlik CRM" },
+  "auth": {
+    "login": "Kirish",
+    "logout": "Chiqish",
+    "email": "Elektron pochta",
+    "password": "Parol",
+    "signingIn": "Kirilmoqda…",
+    "invalid": "Email yoki parol xato",
+    "welcome": "Xush kelibsiz"
+  },
+  "nav": {
+    "dashboard": "Boshqaruv paneli",
+    "leads": "Lidlar",
+    "appointments": "Uchrashuvlar",
+    "inventory": "Ombor",
+    "sales": "Sotuvlar",
+    "aftersales": "Sotuvdan keyingi",
+    "aftersalesInventory": "AfterSales ombori",
+    "finance": "Moliya",
+    "reports": "Hisobotlar",
+    "users": "Foydalanuvchilar",
+    "settings": "Sozlamalar",
+    "today": "Bugun",
+    "leadPool": "Lidlar havzasi",
+    "myLeads": "Mening lidlarim",
+    "newLeads": "Yangi lidlar",
+    "followUps": "Qayta qo'ng'iroqlar",
+    "qualified": "Saralangan / Tayinlangan",
+    "customersToCall": "Qo'ng'iroq qilinadigan mijozlar",
+    "soldCars": "Sotilgan avtomobillar",
+    "serviceVisits": "Servis tashriflari",
+    "financeOverview": "Moliya ko'rinishi",
+    "expenses": "Xarajatlar",
+    "soldCarsFinance": "Sotuvlar moliyasi",
+    "distributorBonuses": "Distribyutor bonuslari"
+  },
+  "roles": {
+    "SUPER_ADMIN": "Bosh administrator",
+    "HEAD_OF_SALES": "Sotuv bo'limi boshlig'i",
+    "SALES_MANAGER": "Sotuv menejeri",
+    "CALL_CENTER": "Call-markaz",
+    "SERVICE_STAFF": "Servis xodimi",
+    "FINANCE": "Moliya"
+  },
+  "settings": {
+    "title": "Sozlamalar",
+    "brands": "Brendlar",
+    "dealerships": "Dilerlik markazlari",
+    "addDealership": "Dilerlik markazi qo'shish",
+    "addBrand": "Brend qo'shish",
+    "name": "Nomi",
+    "code": "Kodi",
+    "cityRegion": "Shahar / Viloyat",
+    "address": "Manzil",
+    "active": "Faol",
+    "brandsAvailable": "Mavjud brendlar",
+    "save": "Saqlash",
+    "cancel": "Bekor qilish"
+  },
+  "common": {
+    "language": "Til",
+    "loading": "Yuklanmoqda…",
+    "active": "Faol",
+    "inactive": "Faol emas",
+    "none": "Yo'q"
+  }
+}

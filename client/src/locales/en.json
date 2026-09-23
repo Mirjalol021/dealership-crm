@@ -1,0 +1,68 @@
+{
+  "app": { "name": "Dealership CRM" },
+  "auth": {
+    "login": "Sign in",
+    "logout": "Sign out",
+    "email": "Email",
+    "password": "Password",
+    "signingIn": "Signing in…",
+    "invalid": "Invalid email or password",
+    "welcome": "Welcome"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "leads": "Leads",
+    "appointments": "Appointments",
+    "inventory": "Inventory",
+    "sales": "Sales",
+    "aftersales": "AfterSales",
+    "aftersalesInventory": "AfterSales Inventory",
+    "finance": "Finance",
+    "reports": "Reports",
+    "users": "Users",
+    "settings": "Settings",
+    "today": "Today",
+    "leadPool": "Lead Pool",
+    "myLeads": "My Leads",
+    "newLeads": "New Leads",
+    "followUps": "Follow-Ups",
+    "qualified": "Qualified / Assigned",
+    "customersToCall": "Customers to Call",
+    "soldCars": "Sold Cars",
+    "serviceVisits": "Service Visits",
+    "financeOverview": "Finance Overview",
+    "expenses": "Expenses",
+    "soldCarsFinance": "Sold Cars Finance",
+    "distributorBonuses": "Distributor Bonuses"
+  },
+  "roles": {
+    "SUPER_ADMIN": "Super Admin",
+    "HEAD_OF_SALES": "Head of Sales",
+    "SALES_MANAGER": "Sales Manager",
+    "CALL_CENTER": "Call Center",
+    "SERVICE_STAFF": "Service Staff",
+    "FINANCE": "Finance"
+  },
+  "settings": {
+    "title": "Settings",
+    "brands": "Brands",
+    "dealerships": "Dealerships",
+    "addDealership": "Add Dealership",
+    "addBrand": "Add Brand",
+    "name": "Name",
+    "code": "Code",
+    "cityRegion": "City / Region",
+    "address": "Address",
+    "active": "Active",
+    "brandsAvailable": "Brands available",
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "common": {
+    "language": "Language",
+    "loading": "Loading…",
+    "active": "Active",
+    "inactive": "Inactive",
+    "none": "None"
+  }
+}

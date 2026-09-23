@@ -1,0 +1,68 @@
+{
+  "app": { "name": "CRM Дилерского центра" },
+  "auth": {
+    "login": "Войти",
+    "logout": "Выйти",
+    "email": "Эл. почта",
+    "password": "Пароль",
+    "signingIn": "Вход…",
+    "invalid": "Неверный email или пароль",
+    "welcome": "Добро пожаловать"
+  },
+  "nav": {
+    "dashboard": "Панель",
+    "leads": "Лиды",
+    "appointments": "Записи",
+    "inventory": "Склад",
+    "sales": "Продажи",
+    "aftersales": "Послепродажное",
+    "aftersalesInventory": "Склад AfterSales",
+    "finance": "Финансы",
+    "reports": "Отчёты",
+    "users": "Пользователи",
+    "settings": "Настройки",
+    "today": "Сегодня",
+    "leadPool": "Пул лидов",
+    "myLeads": "Мои лиды",
+    "newLeads": "Новые лиды",
+    "followUps": "Повторные звонки",
+    "qualified": "Квалифицированные",
+    "customersToCall": "Клиенты для звонка",
+    "soldCars": "Проданные авто",
+    "serviceVisits": "Сервисные визиты",
+    "financeOverview": "Обзор финансов",
+    "expenses": "Расходы",
+    "soldCarsFinance": "Финансы продаж",
+    "distributorBonuses": "Бонусы дистрибьютора"
+  },
+  "roles": {
+    "SUPER_ADMIN": "Супер Админ",
+    "HEAD_OF_SALES": "Руководитель отдела продаж",
+    "SALES_MANAGER": "Менеджер по продажам",
+    "CALL_CENTER": "Колл-центр",
+    "SERVICE_STAFF": "Сервисный персонал",
+    "FINANCE": "Финансы"
+  },
+  "settings": {
+    "title": "Настройки",
+    "brands": "Бренды",
+    "dealerships": "Дилерские центры",
+    "addDealership": "Добавить дилерский центр",
+    "addBrand": "Добавить бренд",
+    "name": "Название",
+    "code": "Код",
+    "cityRegion": "Город / Регион",
+    "address": "Адрес",
+    "active": "Активен",
+    "brandsAvailable": "Доступные бренды",
+    "save": "Сохранить",
+    "cancel": "Отмена"
+  },
+  "common": {
+    "language": "Язык",
+    "loading": "Загрузка…",
+    "active": "Активен",
+    "inactive": "Неактивен",
+    "none": "Нет"
+  }
+}
