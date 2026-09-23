@@ -111,6 +111,40 @@ enum ActivityEvent {
   LOST
 }
 
+// Phase 3 (§27-§34)
+enum VehicleStatus {
+  AVAILABLE
+  RESERVED
+  SOLD
+}
+
+enum PaymentType {
+  CASH
+  CREDIT
+  OTHER
+}
+
+enum PaymentMethod {
+  LLC_ACCOUNT
+  CASH
+  CARD
+}
+
+enum BonusStatus {
+  EXPECTED
+  CONFIRMED
+  PAID
+}
+
+enum BonusType {
+  TONIROVKA
+  POLIK
+  REGISTRATION
+  FUEL
+  GIFT
+  OTHER
+}
+
 // ---------- CORE ----------
 
 model Brand {
@@ -126,6 +160,8 @@ model Brand {
   dealershipLinks DealershipBrand[]
   userLinks       UserBrandAccess[]
   leads           Lead[]
+  inventoryVehicles InventoryVehicle[]
+  soldCars        SoldCar[]
 
   @@index([active, sortOrder])
 }
@@ -143,6 +179,8 @@ model Dealership {
   userLinks  UserDealershipAccess[]
   leads      Lead[]
   appointments Appointment[]
+  inventoryVehicles InventoryVehicle[]
+  soldCars   SoldCar[]
 
   @@index([active])
 }
@@ -178,6 +216,8 @@ model User {
   assignedLeads   Lead[]            @relation("LeadAssignee")
   leadComments    LeadComment[]
   appointments    Appointment[]     @relation("AppointmentManager")
+  reservations    VehicleReservation[] @relation("ReservationManager")
+  soldCars        SoldCar[]         @relation("SoldCarManager")
 
   @@index([role, active])
 }
@@ -243,6 +283,8 @@ model Customer {
 
   phones LeadPhone[]
   leads  Lead[]
+  reservations VehicleReservation[]
+  soldCars SoldCar[]
 
   @@index([primaryPhone])
 }
@@ -302,6 +344,7 @@ model Lead {
   assignments   LeadAssignment[]
   appointments  Appointment[]
   formAnswers   LeadFormAnswer[]
+  reservations  VehicleReservation[]
 
   @@index([pipelineStatus])
   @@index([assignedUserId])
@@ -414,4 +457,122 @@ model LeadFormAnswer {
   lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
   @@index([leadId])
+}
+
+// ---------- VEHICLE SALES (§27-§34) ----------
+
+model InventoryVehicle {
+  id           String        @id @default(cuid())
+  dealershipId String
+  brandId      String
+  model        String
+  trim         String?
+  color        String?
+  vin          String        @unique
+  arrivalDate  DateTime      @default(now())
+  sellingPrice Decimal?      @db.Decimal(14, 2)
+  status       VehicleStatus @default(AVAILABLE)
+  notes        String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  dealership   Dealership          @relation(fields: [dealershipId], references: [id])
+  brand        Brand               @relation(fields: [brandId], references: [id])
+  reservations VehicleReservation[]
+  soldCar      SoldCar?
+
+  @@index([status])
+  @@index([dealershipId])
+  @@index([brandId])
+}
+
+model VehicleReservation {
+  id                    String      @id @default(cuid())
+  vehicleId             String
+  customerId            String
+  phone                 String?
+  leadId                String?
+  salesManagerId        String?
+  reservationDate       DateTime    @default(now())
+  depositAmount         Decimal     @db.Decimal(14, 2)
+  depositPaymentMethod  PaymentMethod?
+  expirationDate        DateTime?
+  comment               String?
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  vehicle      InventoryVehicle @relation(fields: [vehicleId], references: [id])
+  customer     Customer         @relation(fields: [customerId], references: [id])
+  lead         Lead?            @relation(fields: [leadId], references: [id])
+  salesManager User?            @relation("ReservationManager", fields: [salesManagerId], references: [id])
+
+  @@index([vehicleId])
+  @@index([customerId])
+}
+
+model SoldCar {
+  id                   String      @id @default(cuid())
+  saleDate             DateTime    @default(now())
+  dealershipId         String
+  brandId              String
+  model                String
+  vin                  String      @unique
+  customerId           String
+  phone                String?
+  salesManagerId       String?
+  salePrice            Decimal     @db.Decimal(14, 2)
+  paymentType          PaymentType
+  financeProductText   String?
+  manualMargin         Decimal     @db.Decimal(14, 2) // actual deal margin (§30)
+  discountedSale       Boolean     @default(false)
+  discountAmount       Decimal?    @db.Decimal(14, 2)
+  discountComment      String?
+  vehicleId            String?     @unique
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+
+  dealership      Dealership            @relation(fields: [dealershipId], references: [id])
+  brand           Brand                 @relation(fields: [brandId], references: [id])
+  customer        Customer              @relation(fields: [customerId], references: [id])
+  salesManager    User?                 @relation("SoldCarManager", fields: [salesManagerId], references: [id])
+  vehicle         InventoryVehicle?     @relation(fields: [vehicleId], references: [id])
+  customerBonuses VehicleCustomerBonus[]
+  vinBonuses      VinDistributorBonus[]
+
+  @@index([saleDate])
+  @@index([dealershipId])
+  @@index([brandId])
+}
+
+model VehicleCustomerBonus {
+  id        String      @id @default(cuid())
+  soldCarId String
+  bonusType BonusType
+  amount    Decimal     @db.Decimal(14, 2)
+  date      DateTime    @default(now())
+  paidFrom  PaymentMethod
+  comment   String?
+  createdAt DateTime    @default(now())
+
+  soldCar SoldCar @relation(fields: [soldCarId], references: [id], onDelete: Cascade)
+
+  @@index([soldCarId])
+}
+
+model VinDistributorBonus {
+  id              String      @id @default(cuid())
+  soldCarId       String
+  amount          Decimal     @db.Decimal(14, 2)
+  accountingMonth String      // "2026-09"
+  status          BonusStatus @default(EXPECTED)
+  receivedDate    DateTime?
+  receivedVia     PaymentMethod?
+  comment         String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  soldCar SoldCar @relation(fields: [soldCarId], references: [id], onDelete: Cascade)
+
+  @@index([soldCarId])
+  @@index([status])
 }

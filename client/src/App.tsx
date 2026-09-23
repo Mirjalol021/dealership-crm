@@ -13,6 +13,9 @@ import { MyLeadsPage } from './pages/MyLeadsPage';
 import { KanbanPage } from './pages/KanbanPage';
 import { AppointmentsPage } from './pages/AppointmentsPage';
 import { ManagementPage } from './pages/ManagementPage';
+import { InventoryPage } from './pages/InventoryPage';
+import { ReservationsPage } from './pages/ReservationsPage';
+import { SoldCarsPage } from './pages/SoldCarsPage';
 
 function Home() {
   const { user } = useAuth();
@@ -43,9 +46,10 @@ export function App() {
         <Route path="/qualified" element={<LeadPoolPage />} />
         <Route path="/appointments" element={<AppointmentsPage />} />
         <Route path="/management" element={<ManagementPage />} />
-        <Route path="/inventory" element={<PlaceholderPage labelKey="inventory" />} />
+        <Route path="/inventory" element={<InventoryPage />} />
+        <Route path="/reservations" element={<ReservationsPage />} />
         <Route path="/sales" element={<PlaceholderPage labelKey="sales" />} />
-        <Route path="/sold-cars" element={<PlaceholderPage labelKey="soldCars" />} />
+        <Route path="/sold-cars" element={<SoldCarsPage />} />
         <Route path="/aftersales" element={<PlaceholderPage labelKey="aftersales" />} />
         <Route path="/aftersales/inventory" element={<PlaceholderPage labelKey="aftersalesInventory" />} />
         <Route path="/customers-to-call" element={<PlaceholderPage labelKey="customersToCall" />} />

@@ -122,6 +122,30 @@ async function main() {
     console.log(`Demo leads in pool: ${demo.length}`);
   }
 
+  // Demo inventory vehicles (§27) — idempotent by VIN.
+  const demoVehicles = [
+    { vin: 'GEELYEX5000000001', model: 'EX5', trim: 'Luxury', color: 'White', price: 285000000, brand: 'GEELY' },
+    { vin: 'GEELYCOOLRAY00002', model: 'Coolray', trim: 'Comfort', color: 'Black', price: 245000000, brand: 'GEELY' },
+    { vin: 'DONGFENGHUGE000003', model: 'Huge', trim: 'Base', color: 'Grey', price: 320000000, brand: 'DONGFENG' },
+    { vin: 'MGZS0000000000004', model: 'ZS', trim: 'Luxury', color: 'Red', price: 210000000, brand: 'MG' },
+    { vin: 'GEELYPREFACE00005', model: 'Preface', trim: 'Premium', color: 'Blue', price: 340000000, brand: 'GEELY' },
+  ] as const;
+  let invCreated = 0;
+  for (const v of demoVehicles) {
+    const exists = await prisma.inventoryVehicle.findUnique({ where: { vin: v.vin } });
+    if (!exists) {
+      const brand = brands.find((b) => b.code === v.brand)!;
+      await prisma.inventoryVehicle.create({
+        data: {
+          dealershipId: dealership.id, brandId: brand.id, model: v.model, trim: v.trim,
+          color: v.color, vin: v.vin, sellingPrice: v.price, status: 'AVAILABLE',
+        },
+      });
+      invCreated++;
+    }
+  }
+  console.log(`Demo inventory vehicles created: ${invCreated}`);
+
   console.log('Seed done.');
 }
 

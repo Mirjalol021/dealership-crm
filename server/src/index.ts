@@ -10,6 +10,9 @@ import { userRoutes } from './routes/users.routes.js';
 import { leadRoutes } from './routes/leads.routes.js';
 import { appointmentRoutes } from './routes/appointments.routes.js';
 import { settingsRoutes } from './routes/settings.routes.js';
+import { inventoryRoutes } from './routes/inventory.routes.js';
+import { reservationRoutes } from './routes/reservations.routes.js';
+import { salesRoutes } from './routes/sales.routes.js';
 
 export async function buildServer() {
   const app = Fastify({ logger: { level: config.isProd ? 'info' : 'debug' } });
@@ -32,6 +35,9 @@ export async function buildServer() {
   await app.register(leadRoutes);
   await app.register(appointmentRoutes);
   await app.register(settingsRoutes);
+  await app.register(inventoryRoutes);
+  await app.register(reservationRoutes);
+  await app.register(salesRoutes);
 
   return app;
 }
