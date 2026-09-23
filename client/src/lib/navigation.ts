@@ -19,10 +19,12 @@ const ITEMS: Record<string, NavItem> = {
   reports: { path: '/reports', labelKey: 'reports' },
   users: { path: '/users', labelKey: 'users', capability: 'users.manage' },
   settings: { path: '/settings', labelKey: 'settings', capability: 'settings.manage' },
+  management: { path: '/management', labelKey: 'management', capability: 'leads.view.all' },
 
   // Staff-focused items
   today: { path: '/today', labelKey: 'today' },
   leadPool: { path: '/lead-pool', labelKey: 'leadPool', capability: 'leads.take' },
+  kanban: { path: '/kanban', labelKey: 'kanban', capability: 'leads.view.own' },
   myLeads: { path: '/my-leads', labelKey: 'myLeads', capability: 'leads.view.own' },
   newLeads: { path: '/new-leads', labelKey: 'newLeads', capability: 'leads.view.all' },
   followUps: { path: '/follow-ups', labelKey: 'followUps' },
@@ -39,14 +41,14 @@ const ITEMS: Record<string, NavItem> = {
 // Ordered navigation per role (spec §77).
 const ROLE_NAV: Record<Role, string[]> = {
   SUPER_ADMIN: [
-    'dashboard', 'leads', 'appointments', 'inventory', 'sales',
+    'dashboard', 'leads', 'management', 'appointments', 'inventory', 'sales',
     'aftersales', 'aftersalesInventory', 'finance', 'reports', 'users', 'settings',
   ],
   HEAD_OF_SALES: [
-    'dashboard', 'leads', 'appointments', 'inventory', 'sales', 'reports',
+    'dashboard', 'leads', 'management', 'appointments', 'inventory', 'sales', 'reports',
   ],
   SALES_MANAGER: [
-    'today', 'leadPool', 'myLeads', 'appointments', 'inventory',
+    'today', 'leadPool', 'myLeads', 'kanban', 'appointments', 'inventory',
   ],
   CALL_CENTER: [
     'newLeads', 'followUps', 'qualified',

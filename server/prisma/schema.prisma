@@ -1,5 +1,5 @@
 // Dealership CRM V2 — Prisma schema
-// Phase 1 (Foundation) entities only. Later phases append their own entities.
+// Phase 1 (Foundation) + Phase 2 (Leads).
 
 generator client {
   provider = "prisma-client-js"
@@ -27,6 +27,90 @@ enum Language {
   en
 }
 
+// Lead distribution mode (§6)
+enum LeadDistributionMode {
+  MANAGER_SELF_PICK
+  CALL_CENTER_QUALIFICATION
+}
+
+// Pipeline status (§11)
+enum PipelineStatus {
+  NEW
+  WORKING
+  VISIT_PLANNED
+  VISITED_TEST_DRIVE
+  SOLD
+  LOST
+}
+
+// Lead result (§12)
+enum LeadResult {
+  NO_ANSWER
+  CLIENT_BUSY
+  WRONG_NUMBER
+  INFO_GIVEN_VISIT_EXPECTED
+  INFO_GIVEN_THINKING
+  INTERESTED
+  NOT_INTERESTED
+  LEFT_INFO_BY_MISTAKE
+  ANOTHER_REGION
+  VISIT_PLANNED
+  TEST_DRIVE_COMPLETED
+  SOLD
+}
+
+enum LeadPriority {
+  NORMAL
+  PRIORITY
+}
+
+// Lead sources (§8)
+enum LeadSource {
+  META
+  TELEGRAM
+  INSTAGRAM_ORGANIC
+  TELEGRAM_ORGANIC
+  WALK_IN
+  PHONE_CALL
+  REFERRAL
+  EXISTING_CUSTOMER
+  MANUAL
+  OTHER
+}
+
+// Appointment status (§24)
+enum AppointmentStatus {
+  PLANNED
+  ARRIVED
+  NO_SHOW
+}
+
+// Assignment type (§22)
+enum AssignmentType {
+  SELF_PICK
+  CALL_CENTER
+  HEAD_OF_SALES
+  SUPER_ADMIN
+  REASSIGNMENT
+}
+
+// Activity event type (§21)
+enum ActivityEvent {
+  LEAD_CREATED
+  LEAD_ENTERED_POOL
+  LEAD_TAKEN
+  LEAD_ASSIGNED
+  LEAD_REASSIGNED
+  RESULT_UPDATED
+  FOLLOW_UP_SCHEDULED
+  PIPELINE_CHANGED
+  COMMENT_ADDED
+  VISIT_PLANNED
+  TEST_DRIVE_COMPLETED
+  SOLD
+  LOST
+}
+
 // ---------- CORE ----------
 
 model Brand {
@@ -41,6 +125,7 @@ model Brand {
 
   dealershipLinks DealershipBrand[]
   userLinks       UserBrandAccess[]
+  leads           Lead[]
 
   @@index([active, sortOrder])
 }
@@ -56,11 +141,12 @@ model Dealership {
 
   brandLinks DealershipBrand[]
   userLinks  UserDealershipAccess[]
+  leads      Lead[]
+  appointments Appointment[]
 
   @@index([active])
 }
 
-// Brands available at a dealership (multi-select in Settings -> Dealerships)
 model DealershipBrand {
   dealershipId String
   brandId      String
@@ -88,6 +174,10 @@ model User {
   dealershipAccess UserDealershipAccess[]
   brandAccess      UserBrandAccess[]
   sessions         Session[]
+
+  assignedLeads   Lead[]            @relation("LeadAssignee")
+  leadComments    LeadComment[]
+  appointments    Appointment[]     @relation("AppointmentManager")
 
   @@index([role, active])
 }
@@ -131,4 +221,197 @@ model Session {
 
   @@index([userId])
   @@index([expiresAt])
+}
+
+// ---------- APP SETTINGS ----------
+
+// Single-row application settings (lead distribution mode, etc.)
+model AppSettings {
+  id                   String               @id @default("singleton")
+  leadDistributionMode LeadDistributionMode @default(MANAGER_SELF_PICK)
+  updatedAt            DateTime             @updatedAt
+}
+
+// ---------- LEADS ----------
+
+model Customer {
+  id            String   @id @default(cuid())
+  name          String?
+  primaryPhone  String   // normalized
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  phones LeadPhone[]
+  leads  Lead[]
+
+  @@index([primaryPhone])
+}
+
+model LeadPhone {
+  id        String   @id @default(cuid())
+  customerId String
+  phone     String   // normalized
+  createdAt DateTime @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([phone])
+  @@index([customerId])
+}
+
+model Lead {
+  id            String  @id @default(cuid())
+  customerId    String
+  dealershipId  String
+  brandId       String
+  modelInterest String?
+  source        LeadSource
+  campaign      String?
+  formId        String?
+  externalLeadId String?
+
+  // Ownership (§10)
+  assignedUserId String?
+  assignedAt     DateTime?
+  priority       LeadPriority @default(NORMAL)
+
+  // Sales state
+  pipelineStatus  PipelineStatus @default(NEW)
+  lastResult      LeadResult?
+  nextFollowUpAt  DateTime?
+  expectedVisitAt DateTime?
+
+  // Timestamps (§10, §74)
+  createdAt      DateTime  @default(now())
+  firstContactAt DateTime?
+  lastContactAt  DateTime?
+  visitedAt      DateTime?
+  soldAt         DateTime?
+  lostAt         DateTime?
+
+  updatedAt DateTime @updatedAt
+
+  customer      Customer          @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  dealership    Dealership        @relation(fields: [dealershipId], references: [id])
+  brand         Brand             @relation(fields: [brandId], references: [id])
+  assignedUser  User?             @relation("LeadAssignee", fields: [assignedUserId], references: [id])
+
+  comments      LeadComment[]
+  attempts      LeadContactAttempt[]
+  activities    LeadActivity[]
+  assignments   LeadAssignment[]
+  appointments  Appointment[]
+  formAnswers   LeadFormAnswer[]
+
+  @@index([pipelineStatus])
+  @@index([assignedUserId])
+  @@index([dealershipId])
+  @@index([brandId])
+  @@index([nextFollowUpAt])
+  @@index([source])
+  @@index([createdAt])
+}
+
+model LeadComment {
+  id        String   @id @default(cuid())
+  leadId    String
+  authorId  String
+  text      String
+  createdAt DateTime @default(now())
+
+  lead   Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id])
+
+  @@index([leadId])
+}
+
+model LeadContactAttempt {
+  id        String     @id @default(cuid())
+  leadId    String
+  attemptNo Int
+  result    LeadResult
+  createdAt DateTime   @default(now())
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+}
+
+model LeadActivity {
+  id       String        @id @default(cuid())
+  leadId   String
+  userId   String?
+  event    ActivityEvent
+  oldValue String?
+  newValue String?
+  createdAt DateTime     @default(now())
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+}
+
+model LeadAssignment {
+  id             String         @id @default(cuid())
+  leadId         String
+  fromUserId     String?
+  toUserId       String?
+  assignedById   String?
+  assignmentType AssignmentType
+  createdAt      DateTime       @default(now())
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+}
+
+model Appointment {
+  id           String            @id @default(cuid())
+  leadId       String
+  customerId   String
+  dealershipId String
+  brandId      String
+  managerId    String?
+  date         DateTime
+  time         String? // "15:00" optional (§24)
+  status       AppointmentStatus @default(PLANNED)
+  note         String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  lead       Lead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  dealership Dealership @relation(fields: [dealershipId], references: [id])
+  manager    User?      @relation("AppointmentManager", fields: [managerId], references: [id])
+
+  @@index([leadId])
+  @@index([date])
+}
+
+// Form configuration (§61) and dynamic answers (§60)
+model ExternalLeadForm {
+  id           String     @id @default(cuid())
+  source       LeadSource
+  formId       String
+  formName     String
+  brandId      String?
+  dealershipId String?
+  active       Boolean    @default(true)
+  fieldMapping Json?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([source, formId])
+}
+
+model LeadFormAnswer {
+  id                    String   @id @default(cuid())
+  leadId                String
+  externalFieldKey      String
+  questionLabelSnapshot String
+  answer                String
+  displayOrder          Int      @default(0)
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
 }

@@ -1,5 +1,7 @@
 {
-  "app": { "name": "CRM Дилерского центра" },
+  "app": {
+    "name": "CRM Дилерского центра"
+  },
   "auth": {
     "login": "Войти",
     "logout": "Выйти",
@@ -33,7 +35,9 @@
     "financeOverview": "Обзор финансов",
     "expenses": "Расходы",
     "soldCarsFinance": "Финансы продаж",
-    "distributorBonuses": "Бонусы дистрибьютора"
+    "distributorBonuses": "Бонусы дистрибьютора",
+    "management": "Аналитика руководителя",
+    "kanban": "Kanban"
   },
   "roles": {
     "SUPER_ADMIN": "Супер Админ",
@@ -64,5 +68,85 @@
     "active": "Активен",
     "inactive": "Неактивен",
     "none": "Нет"
+  },
+  "lead": {
+    "takeLead": "Взять лид",
+    "pool": "Пул лидов",
+    "noLeads": "Лидов нет",
+    "customer": "Клиент",
+    "brand": "Бренд",
+    "model": "Модель",
+    "source": "Источник",
+    "dealership": "Дилерский центр",
+    "received": "Получен",
+    "priority": "Приоритет",
+    "addLead": "Добавить лид",
+    "phone": "Телефон",
+    "name": "Имя",
+    "note": "Заметка",
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "saveNext": "Сохранить и следующий",
+    "call": "Позвонить",
+    "result": "Результат",
+    "followUp": "Повторный звонок",
+    "comment": "Комментарий",
+    "comments": "Комментарии",
+    "addComment": "Добавить комментарий",
+    "activity": "Активность",
+    "attempts": "Звонки",
+    "pipeline": "Этап",
+    "nextAction": "Следующее действие",
+    "attempt": "Попытка",
+    "overdue": "Просрочено",
+    "today": "Сегодня",
+    "callToday": "Звонок сегодня",
+    "noAnswer": "Нет ответа",
+    "busy": "Занят / позже",
+    "interested": "Заинтересован",
+    "infoGiven": "Инфо дана",
+    "visitPlanned": "Визит запланирован",
+    "notInterested": "Не заинтересован",
+    "wrongNumber": "Неверный номер",
+    "mistake": "Ошибочные данные",
+    "anotherRegion": "Другой регион",
+    "testDrive": "Тест-драйв",
+    "sold": "Продано",
+    "visitExpected": "Ожидается визит",
+    "thinking": "Думает"
+  },
+  "pipelineStatus": {
+    "NEW": "Новый",
+    "WORKING": "В работе",
+    "VISIT_PLANNED": "Визит запланирован",
+    "VISITED_TEST_DRIVE": "Визит / Тест-драйв",
+    "SOLD": "Продано",
+    "LOST": "Потерян"
+  },
+  "resultLabel": {
+    "NO_ANSWER": "Нет ответа",
+    "CLIENT_BUSY": "Занят / позже",
+    "WRONG_NUMBER": "Неверный номер",
+    "INFO_GIVEN_VISIT_EXPECTED": "Инфо дана — ожидается визит",
+    "INFO_GIVEN_THINKING": "Инфо дана — думает",
+    "INTERESTED": "Заинтересован",
+    "NOT_INTERESTED": "Не заинтересован",
+    "LEFT_INFO_BY_MISTAKE": "Ошибочно оставлен",
+    "ANOTHER_REGION": "Другой регион",
+    "VISIT_PLANNED": "Визит запланирован",
+    "TEST_DRIVE_COMPLETED": "Тест-драйв пройден",
+    "SOLD": "Продано"
+  },
+  "sourceLabel": {
+    "META": "Meta",
+    "TELEGRAM": "Telegram",
+    "INSTAGRAM_ORGANIC": "Instagram (орг.)",
+    "TELEGRAM_ORGANIC": "Telegram (орг.)",
+    "WALK_IN": "Пришёл сам",
+    "PHONE_CALL": "Звонок",
+    "REFERRAL": "Рекомендация",
+    "EXISTING_CUSTOMER": "Действующий клиент",
+    "MANUAL": "Вручную",
+    "OTHER": "Другое"
   }
 }

@@ -1,5 +1,7 @@
 {
-  "app": { "name": "Dilerlik CRM" },
+  "app": {
+    "name": "Dilerlik CRM"
+  },
   "auth": {
     "login": "Kirish",
     "logout": "Chiqish",
@@ -33,7 +35,9 @@
     "financeOverview": "Moliya ko'rinishi",
     "expenses": "Xarajatlar",
     "soldCarsFinance": "Sotuvlar moliyasi",
-    "distributorBonuses": "Distribyutor bonuslari"
+    "distributorBonuses": "Distribyutor bonuslari",
+    "management": "Rahbar tahlili",
+    "kanban": "Kanban"
   },
   "roles": {
     "SUPER_ADMIN": "Bosh administrator",
@@ -64,5 +68,85 @@
     "active": "Faol",
     "inactive": "Faol emas",
     "none": "Yo'q"
+  },
+  "lead": {
+    "takeLead": "Lidni olish",
+    "pool": "Lidlar havzasi",
+    "noLeads": "Lidlar yo'q",
+    "customer": "Mijoz",
+    "brand": "Brend",
+    "model": "Model",
+    "source": "Manba",
+    "dealership": "Dilerlik markazi",
+    "received": "Qabul qilindi",
+    "priority": "Muhim",
+    "addLead": "Lid qo'shish",
+    "phone": "Telefon",
+    "name": "Ism",
+    "note": "Izoh",
+    "save": "Saqlash",
+    "cancel": "Bekor qilish",
+    "saveNext": "Saqlash va keyingisi",
+    "call": "Qo'ng'iroq qilish",
+    "result": "Natija",
+    "followUp": "Keyingi qo'ng'iroq",
+    "comment": "Izoh",
+    "comments": "Izohlar",
+    "addComment": "Izoh qo'shish",
+    "activity": "Faoliyat",
+    "attempts": "Qo'ng'iroqlar",
+    "pipeline": "Bosqich",
+    "nextAction": "Keyingi harakat",
+    "attempt": "Urinish",
+    "overdue": "Muddati o'tgan",
+    "today": "Bugun",
+    "callToday": "Bugun qo'ng'iroq",
+    "noAnswer": "Javob yo'q",
+    "busy": "Band / keyinroq",
+    "interested": "Qiziqdi",
+    "infoGiven": "Ma'lumot berildi",
+    "visitPlanned": "Tashrif rejalashtirildi",
+    "notInterested": "Qiziqmadi",
+    "wrongNumber": "Xato raqam",
+    "mistake": "Xato ma'lumot",
+    "anotherRegion": "Boshqa viloyat",
+    "testDrive": "Test-drayv",
+    "sold": "Sotildi",
+    "visitExpected": "Tashrif kutilmoqda",
+    "thinking": "O'ylayapti"
+  },
+  "pipelineStatus": {
+    "NEW": "Yangi",
+    "WORKING": "Ishlanmoqda",
+    "VISIT_PLANNED": "Tashrif rejalashtirilgan",
+    "VISITED_TEST_DRIVE": "Tashrif / Test-drayv",
+    "SOLD": "Sotildi",
+    "LOST": "Yo'qotilgan"
+  },
+  "resultLabel": {
+    "NO_ANSWER": "Javob yo'q",
+    "CLIENT_BUSY": "Band / keyinroq",
+    "WRONG_NUMBER": "Xato raqam",
+    "INFO_GIVEN_VISIT_EXPECTED": "Ma'lumot berildi — tashrif kutilmoqda",
+    "INFO_GIVEN_THINKING": "Ma'lumot berildi — o'ylayapti",
+    "INTERESTED": "Qiziqdi",
+    "NOT_INTERESTED": "Qiziqmadi",
+    "LEFT_INFO_BY_MISTAKE": "Xato ma'lumot qoldirilgan",
+    "ANOTHER_REGION": "Boshqa viloyat",
+    "VISIT_PLANNED": "Tashrif rejalashtirildi",
+    "TEST_DRIVE_COMPLETED": "Test-drayv bajarildi",
+    "SOLD": "Sotildi"
+  },
+  "sourceLabel": {
+    "META": "Meta",
+    "TELEGRAM": "Telegram",
+    "INSTAGRAM_ORGANIC": "Instagram (organik)",
+    "TELEGRAM_ORGANIC": "Telegram (organik)",
+    "WALK_IN": "Kelgan mijoz",
+    "PHONE_CALL": "Qo'ng'iroq",
+    "REFERRAL": "Tavsiya",
+    "EXISTING_CUSTOMER": "Mavjud mijoz",
+    "MANUAL": "Qo'lda",
+    "OTHER": "Boshqa"
   }
 }

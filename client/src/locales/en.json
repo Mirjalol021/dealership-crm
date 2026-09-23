@@ -1,5 +1,7 @@
 {
-  "app": { "name": "Dealership CRM" },
+  "app": {
+    "name": "Dealership CRM"
+  },
   "auth": {
     "login": "Sign in",
     "logout": "Sign out",
@@ -33,7 +35,9 @@
     "financeOverview": "Finance Overview",
     "expenses": "Expenses",
     "soldCarsFinance": "Sold Cars Finance",
-    "distributorBonuses": "Distributor Bonuses"
+    "distributorBonuses": "Distributor Bonuses",
+    "management": "Management",
+    "kanban": "Kanban"
   },
   "roles": {
     "SUPER_ADMIN": "Super Admin",
@@ -64,5 +68,85 @@
     "active": "Active",
     "inactive": "Inactive",
     "none": "None"
+  },
+  "lead": {
+    "takeLead": "Take Lead",
+    "pool": "Lead Pool",
+    "noLeads": "No leads",
+    "customer": "Customer",
+    "brand": "Brand",
+    "model": "Model",
+    "source": "Source",
+    "dealership": "Dealership",
+    "received": "Received",
+    "priority": "Priority",
+    "addLead": "Add Lead",
+    "phone": "Phone",
+    "name": "Name",
+    "note": "Note",
+    "save": "Save",
+    "cancel": "Cancel",
+    "saveNext": "Save & Next",
+    "call": "Call",
+    "result": "Result",
+    "followUp": "Follow-up",
+    "comment": "Comment",
+    "comments": "Comments",
+    "addComment": "Add comment",
+    "activity": "Activity",
+    "attempts": "Attempts",
+    "pipeline": "Pipeline",
+    "nextAction": "Next action",
+    "attempt": "Attempt",
+    "overdue": "Overdue",
+    "today": "Today",
+    "callToday": "Call today",
+    "noAnswer": "No Answer",
+    "busy": "Busy / Call Later",
+    "interested": "Interested",
+    "infoGiven": "Info Given",
+    "visitPlanned": "Visit Planned",
+    "notInterested": "Not Interested",
+    "wrongNumber": "Wrong Number",
+    "mistake": "Mistake",
+    "anotherRegion": "Another Region",
+    "testDrive": "Test Drive",
+    "sold": "Sold",
+    "visitExpected": "Visit Expected",
+    "thinking": "Thinking"
+  },
+  "pipelineStatus": {
+    "NEW": "New",
+    "WORKING": "Working",
+    "VISIT_PLANNED": "Visit Planned",
+    "VISITED_TEST_DRIVE": "Visited / Test Drive",
+    "SOLD": "Sold",
+    "LOST": "Lost"
+  },
+  "resultLabel": {
+    "NO_ANSWER": "No Answer",
+    "CLIENT_BUSY": "Busy / Call Later",
+    "WRONG_NUMBER": "Wrong Number",
+    "INFO_GIVEN_VISIT_EXPECTED": "Info Given — Visit Expected",
+    "INFO_GIVEN_THINKING": "Info Given — Thinking",
+    "INTERESTED": "Interested",
+    "NOT_INTERESTED": "Not Interested",
+    "LEFT_INFO_BY_MISTAKE": "Left Info by Mistake",
+    "ANOTHER_REGION": "Another Region",
+    "VISIT_PLANNED": "Visit Planned",
+    "TEST_DRIVE_COMPLETED": "Test Drive Completed",
+    "SOLD": "Sold"
+  },
+  "sourceLabel": {
+    "META": "Meta",
+    "TELEGRAM": "Telegram",
+    "INSTAGRAM_ORGANIC": "Instagram Organic",
+    "TELEGRAM_ORGANIC": "Telegram Organic",
+    "WALK_IN": "Walk-in",
+    "PHONE_CALL": "Phone Call",
+    "REFERRAL": "Referral",
+    "EXISTING_CUSTOMER": "Existing Customer",
+    "MANUAL": "Manual",
+    "OTHER": "Other"
   }
 }

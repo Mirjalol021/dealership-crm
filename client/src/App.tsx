@@ -7,6 +7,12 @@ import { DashboardPage } from './pages/DashboardPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { UsersPage } from './pages/UsersPage';
 import { PlaceholderPage } from './pages/PlaceholderPage';
+import { TodayPage } from './pages/TodayPage';
+import { LeadPoolPage } from './pages/LeadPoolPage';
+import { MyLeadsPage } from './pages/MyLeadsPage';
+import { KanbanPage } from './pages/KanbanPage';
+import { AppointmentsPage } from './pages/AppointmentsPage';
+import { ManagementPage } from './pages/ManagementPage';
 
 function Home() {
   const { user } = useAuth();
@@ -27,14 +33,16 @@ export function App() {
         }
       >
         <Route path="/" element={<Home />} />
-        <Route path="/today" element={<PlaceholderPage labelKey="today" />} />
-        <Route path="/leads" element={<PlaceholderPage labelKey="leads" />} />
-        <Route path="/lead-pool" element={<PlaceholderPage labelKey="leadPool" />} />
-        <Route path="/my-leads" element={<PlaceholderPage labelKey="myLeads" />} />
-        <Route path="/new-leads" element={<PlaceholderPage labelKey="newLeads" />} />
-        <Route path="/follow-ups" element={<PlaceholderPage labelKey="followUps" />} />
-        <Route path="/qualified" element={<PlaceholderPage labelKey="qualified" />} />
-        <Route path="/appointments" element={<PlaceholderPage labelKey="appointments" />} />
+        <Route path="/today" element={<TodayPage />} />
+        <Route path="/leads" element={<KanbanPage />} />
+        <Route path="/kanban" element={<KanbanPage />} />
+        <Route path="/lead-pool" element={<LeadPoolPage />} />
+        <Route path="/my-leads" element={<MyLeadsPage />} />
+        <Route path="/new-leads" element={<MyLeadsPage />} />
+        <Route path="/follow-ups" element={<MyLeadsPage />} />
+        <Route path="/qualified" element={<LeadPoolPage />} />
+        <Route path="/appointments" element={<AppointmentsPage />} />
+        <Route path="/management" element={<ManagementPage />} />
         <Route path="/inventory" element={<PlaceholderPage labelKey="inventory" />} />
         <Route path="/sales" element={<PlaceholderPage labelKey="sales" />} />
         <Route path="/sold-cars" element={<PlaceholderPage labelKey="soldCars" />} />

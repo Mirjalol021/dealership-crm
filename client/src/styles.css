@@ -129,3 +129,98 @@ legend { font-size: 12px; color: var(--muted); padding: 0 4px; }
   padding: 28px; text-align: center;
 }
 .loading { padding: 40px; text-align: center; color: var(--muted); }
+
+/* ---------- Phase 2: Leads ---------- */
+.page-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.btn-primary.inline { width: auto; padding: 8px 14px; }
+.req { color: var(--danger); }
+
+/* Stats */
+.stat-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 18px; }
+@media (max-width: 800px) { .stat-row { grid-template-columns: repeat(2, 1fr); } }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; }
+.stat.brand { border-color: var(--brand); }
+.stat.danger { border-color: var(--danger); }
+.stat-value { font-size: 26px; font-weight: 700; }
+.stat-label { font-size: 12px; color: var(--muted); }
+
+/* Chips */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+.chip { border: 1px solid var(--line); background: #fff; padding: 6px 12px; border-radius: 999px; cursor: pointer; font-size: 13px; }
+.chip.active { background: var(--brand); color: #fff; border-color: var(--brand); }
+
+/* Lead pool grid */
+.lead-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.lead-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; }
+.lead-card.priority { border-left: 4px solid #e0a600; }
+.lead-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.lead-card-line { font-size: 14px; margin-bottom: 3px; }
+.tag-priority { background: #fef3c7; color: #92660a; font-size: 11px; padding: 2px 6px; border-radius: 999px; }
+.lead-card .btn-primary { margin-top: 12px; }
+
+/* Processor (Today) */
+.processor { display: grid; grid-template-columns: 300px 1fr; gap: 18px; align-items: start; }
+@media (max-width: 900px) { .processor { grid-template-columns: 1fr; } }
+.processor-list { display: flex; flex-direction: column; gap: 6px; max-height: 70vh; overflow-y: auto; }
+.processor-item { text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; cursor: pointer; }
+.processor-item.active { border-color: var(--brand); background: #eef3fb; }
+.pi-name { font-weight: 600; font-size: 14px; }
+.processor-main { position: sticky; top: 16px; }
+.processor-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; gap: 12px; }
+.processor-head h2 { margin: 0 0 4px; }
+.phone-link { color: var(--brand); text-decoration: none; font-weight: 600; }
+
+/* Result buttons */
+.result-buttons { margin-bottom: 16px; }
+.result-primary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+@media (max-width: 700px) { .result-primary { grid-template-columns: repeat(2, 1fr); } }
+.result-secondary { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.result-btn { border: 1px solid var(--line); background: #fff; padding: 14px 10px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; }
+.result-btn:hover { border-color: var(--brand); }
+.result-btn.active { background: var(--brand); color: #fff; border-color: var(--brand); }
+.result-btn.small { padding: 8px 12px; font-size: 13px; font-weight: 500; }
+.followup-label { display: block; margin-bottom: 12px; }
+.btn-primary.big { padding: 14px; font-size: 15px; margin-top: 8px; }
+
+/* Pills */
+.pill { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 12px; }
+.pill-new { background: #e8eef6; color: #365170; }
+.pill-working { background: #dbeafe; color: #1e4e8c; }
+.pill-visit-planned { background: #fef3c7; color: #92660a; }
+.pill-visited-test-drive { background: #ede9fe; color: #5b21b6; }
+.pill-sold { background: #d1fae5; color: #065f46; }
+.pill-lost { background: #fee2e2; color: #991b1b; }
+
+/* Table rows */
+.row-click { cursor: pointer; }
+.row-click:hover { background: #f7f9fc; }
+.cell-link { color: var(--brand); font-weight: 600; }
+
+/* Kanban */
+.kanban { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 12px; }
+.kanban-col { min-width: 220px; flex: 1; background: #eef1f5; border-radius: var(--radius); padding: 10px; }
+.kanban-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.kanban-card { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 10px; margin-bottom: 8px; cursor: pointer; }
+.kanban-card:hover { border-color: var(--brand); }
+.kc-name { font-weight: 600; font-size: 14px; }
+.kc-result { font-size: 13px; margin-top: 6px; }
+.kc-next { font-size: 12px; color: var(--brand); margin-top: 3px; }
+
+/* Detail panel */
+.detail-panel { margin-top: 22px; border-top: 1px solid var(--line); padding-top: 16px; }
+.detail-panel h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .3px; color: var(--muted); margin: 16px 0 8px; }
+.kv { list-style: none; margin: 0; padding: 0; font-size: 14px; }
+.kv li { padding: 5px 0; border-bottom: 1px solid #f1f4f7; }
+.activity-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--brand); margin-right: 6px; }
+.comment-add { display: flex; gap: 6px; margin-bottom: 8px; }
+.comment-add input { margin: 0; }
+.comment-list { list-style: none; margin: 0; padding: 0; }
+.comment-list li { padding: 7px 0; border-bottom: 1px solid #f1f4f7; font-size: 14px; }
+
+/* Modal */
+.modal-backdrop { position: fixed; inset: 0; background: rgba(15,20,28,.5); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 20px; }
+.modal { background: #fff; border-radius: 12px; padding: 24px; width: 420px; max-width: 100%; max-height: 90vh; overflow-y: auto; }
+.modal.wide { width: 620px; }
+.modal h2 { margin: 0 0 16px; font-size: 17px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+.modal-actions .btn-primary { width: auto; padding: 9px 18px; }

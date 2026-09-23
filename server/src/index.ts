@@ -7,6 +7,8 @@ import { authRoutes } from './routes/auth.routes.js';
 import { brandRoutes } from './routes/brands.routes.js';
 import { dealershipRoutes } from './routes/dealerships.routes.js';
 import { userRoutes } from './routes/users.routes.js';
+import { leadRoutes } from './routes/leads.routes.js';
+import { appointmentRoutes } from './routes/appointments.routes.js';
 
 export async function buildServer() {
   const app = Fastify({ logger: { level: config.isProd ? 'info' : 'debug' } });
@@ -26,6 +28,8 @@ export async function buildServer() {
   await app.register(brandRoutes);
   await app.register(dealershipRoutes);
   await app.register(userRoutes);
+  await app.register(leadRoutes);
+  await app.register(appointmentRoutes);
 
   return app;
 }
