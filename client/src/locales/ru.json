@@ -60,7 +60,11 @@
     "active": "Активен",
     "brandsAvailable": "Доступные бренды",
     "save": "Сохранить",
-    "cancel": "Отмена"
+    "cancel": "Отмена",
+    "leadDistribution": "Режим распределения лидов",
+    "managerSelfPick": "Менеджер берёт сам",
+    "callCenter": "Колл-центр квалифицирует",
+    "distributionHint": "Текущий режим: лиды попадают в пул, менеджер берёт сам. Режим колл-центра включается позже."
   },
   "common": {
     "language": "Язык",
@@ -113,7 +117,18 @@
     "testDrive": "Тест-драйв",
     "sold": "Продано",
     "visitExpected": "Ожидается визит",
-    "thinking": "Думает"
+    "thinking": "Думает",
+    "assign": "Назначить",
+    "assignTo": "Кому назначить",
+    "markPriority": "Отметить приоритет",
+    "unassign": "Не назначен",
+    "filters": "Фильтры",
+    "all": "Все",
+    "range": "Период",
+    "week7": "7 дней",
+    "thisMonth": "Этот месяц",
+    "manager": "Менеджер",
+    "apply": "Применить"
   },
   "pipelineStatus": {
     "NEW": "Новый",

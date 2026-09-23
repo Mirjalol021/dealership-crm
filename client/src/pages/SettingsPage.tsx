@@ -5,7 +5,7 @@ import type { Brand, Dealership } from '../lib/types';
 
 export function SettingsPage() {
   const { t } = useTranslation();
-  const [tab, setTab] = useState<'dealerships' | 'brands'>('dealerships');
+  const [tab, setTab] = useState<'general' | 'dealerships' | 'brands'>('general');
   const [brands, setBrands] = useState<Brand[]>([]);
   const [dealerships, setDealerships] = useState<Dealership[]>([]);
   const [error, setError] = useState('');
@@ -31,6 +31,9 @@ export function SettingsPage() {
     <div>
       <h1 className="page-title">{t('settings.title')}</h1>
       <div className="tabs">
+        <button className={tab === 'general' ? 'active' : ''} onClick={() => setTab('general')}>
+          {t('settings.leadDistribution')}
+        </button>
         <button className={tab === 'dealerships' ? 'active' : ''} onClick={() => setTab('dealerships')}>
           {t('settings.dealerships')}
         </button>
@@ -39,11 +42,65 @@ export function SettingsPage() {
         </button>
       </div>
       {error && <div className="error">{error}</div>}
-      {tab === 'dealerships' ? (
+      {tab === 'general' ? (
+        <GeneralTab />
+      ) : tab === 'dealerships' ? (
         <DealershipsTab dealerships={dealerships} brands={brands} onChanged={load} />
       ) : (
         <BrandsTab brands={brands} onChanged={load} />
       )}
+    </div>
+  );
+}
+
+function GeneralTab() {
+  const { t } = useTranslation();
+  const [mode, setMode] = useState<'MANAGER_SELF_PICK' | 'CALL_CENTER_QUALIFICATION'>('MANAGER_SELF_PICK');
+  const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    api.get<{ settings: { leadDistributionMode: 'MANAGER_SELF_PICK' | 'CALL_CENTER_QUALIFICATION' } }>('/api/settings')
+      .then((r) => setMode(r.settings.leadDistributionMode));
+  }, []);
+
+  async function change(next: 'MANAGER_SELF_PICK' | 'CALL_CENTER_QUALIFICATION') {
+    setBusy(true);
+    setSaved(false);
+    try {
+      await api.patch('/api/settings', { leadDistributionMode: next });
+      setMode(next);
+      setSaved(true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="card" style={{ maxWidth: 560 }}>
+      <h2>{t('settings.leadDistribution')}</h2>
+      <label className="check">
+        <input
+          type="radio"
+          name="distmode"
+          checked={mode === 'MANAGER_SELF_PICK'}
+          disabled={busy}
+          onChange={() => change('MANAGER_SELF_PICK')}
+        />
+        {t('settings.managerSelfPick')}
+      </label>
+      <label className="check">
+        <input
+          type="radio"
+          name="distmode"
+          checked={mode === 'CALL_CENTER_QUALIFICATION'}
+          disabled={busy}
+          onChange={() => change('CALL_CENTER_QUALIFICATION')}
+        />
+        {t('settings.callCenter')}
+      </label>
+      <p className="muted small">{t('settings.distributionHint')}</p>
+      {saved && <div className="ok-msg">✓ {t('settings.save')}</div>}
     </div>
   );
 }

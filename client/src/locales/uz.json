@@ -60,7 +60,11 @@
     "active": "Faol",
     "brandsAvailable": "Mavjud brendlar",
     "save": "Saqlash",
-    "cancel": "Bekor qilish"
+    "cancel": "Bekor qilish",
+    "leadDistribution": "Lidlarni taqsimlash rejimi",
+    "managerSelfPick": "Menejer o'zi oladi",
+    "callCenter": "Call-markaz saralaydi",
+    "distributionHint": "Hozirgi rejim: lidlar havzaga tushadi va menejer o'zi oladi. Call-markaz rejimi keyinroq yoqiladi."
   },
   "common": {
     "language": "Til",
@@ -113,7 +117,18 @@
     "testDrive": "Test-drayv",
     "sold": "Sotildi",
     "visitExpected": "Tashrif kutilmoqda",
-    "thinking": "O'ylayapti"
+    "thinking": "O'ylayapti",
+    "assign": "Tayinlash",
+    "assignTo": "Kimga tayinlash",
+    "markPriority": "Muhim deb belgilash",
+    "unassign": "Tayinlanmagan",
+    "filters": "Filtrlar",
+    "all": "Barchasi",
+    "range": "Davr",
+    "week7": "7 kun",
+    "thisMonth": "Bu oy",
+    "manager": "Menejer",
+    "apply": "Qo'llash"
   },
   "pipelineStatus": {
     "NEW": "Yangi",

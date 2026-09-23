@@ -60,7 +60,11 @@
     "active": "Active",
     "brandsAvailable": "Brands available",
     "save": "Save",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "leadDistribution": "Lead Distribution Mode",
+    "managerSelfPick": "Manager Self-Pick",
+    "callCenter": "Call Center Qualification",
+    "distributionHint": "Current mode: leads enter the pool and managers self-pick. Call Center mode can be switched on later."
   },
   "common": {
     "language": "Language",
@@ -113,7 +117,18 @@
     "testDrive": "Test Drive",
     "sold": "Sold",
     "visitExpected": "Visit Expected",
-    "thinking": "Thinking"
+    "thinking": "Thinking",
+    "assign": "Assign",
+    "assignTo": "Assign to",
+    "markPriority": "Mark as priority",
+    "unassign": "Unassigned",
+    "filters": "Filters",
+    "all": "All",
+    "range": "Range",
+    "week7": "7 days",
+    "thisMonth": "This month",
+    "manager": "Manager",
+    "apply": "Apply"
   },
   "pipelineStatus": {
     "NEW": "New",

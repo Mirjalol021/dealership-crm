@@ -118,11 +118,15 @@ export async function leadRoutes(app: FastifyInstance): Promise<void> {
 
     const where: Record<string, unknown> = {};
     if (user.role === 'SALES_MANAGER') where.assignedUserId = user.id;
+    else if (q.managerId) where.assignedUserId = q.managerId;
 
     if (q.pipeline && (PIPELINE_ENUM as readonly string[]).includes(q.pipeline)) where.pipelineStatus = q.pipeline;
     if (q.result && (RESULT_ENUM as readonly string[]).includes(q.result)) where.lastResult = q.result;
     if (q.brandId) where.brandId = q.brandId;
+    if (q.dealershipId) where.dealershipId = q.dealershipId;
     if (q.source) where.source = q.source;
+    if (q.campaign) where.campaign = q.campaign;
+    if (q.model) where.modelInterest = { contains: q.model, mode: 'insensitive' };
 
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -132,6 +136,20 @@ export async function leadRoutes(app: FastifyInstance): Promise<void> {
       where.nextFollowUpAt = { gte: startOfToday, lt: endOfToday };
     } else if (q.filter === 'overdue') {
       where.nextFollowUpAt = { lt: startOfToday };
+    }
+
+    // Date range filter (§25, §68): today | 7d | month | custom (from/to)
+    if (q.range === 'today') {
+      where.createdAt = { gte: startOfToday, lt: endOfToday };
+    } else if (q.range === '7d') {
+      where.createdAt = { gte: new Date(startOfToday.getTime() - 6 * 86400000) };
+    } else if (q.range === 'month') {
+      where.createdAt = { gte: new Date(now.getFullYear(), now.getMonth(), 1) };
+    } else if (q.from || q.to) {
+      const range: Record<string, Date> = {};
+      if (q.from) range.gte = new Date(q.from);
+      if (q.to) range.lte = new Date(`${q.to}T23:59:59.999Z`);
+      where.createdAt = range;
     }
 
     const leads = await prisma.lead.findMany({
@@ -403,6 +421,52 @@ export async function leadRoutes(app: FastifyInstance): Promise<void> {
     });
 
     return reply.send({ table, statuses: PIPELINE_ENUM });
+  });
+
+  // --- Management lead result table by manager (§25) ---
+  app.get('/api/leads/analytics/result', { preHandler: [requirePermission('leads.view.all')] }, async (req, reply) => {
+    const q = req.query as Record<string, string | undefined>;
+    const where: Record<string, unknown> = {};
+    if (q.dealershipId) where.dealershipId = q.dealershipId;
+    if (q.brandId) where.brandId = q.brandId;
+    if (q.managerId) where.assignedUserId = q.managerId;
+    if (q.source) where.source = q.source;
+    if (q.campaign) where.campaign = q.campaign;
+
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (q.range === 'today') where.createdAt = { gte: startOfToday };
+    else if (q.range === '7d') where.createdAt = { gte: new Date(startOfToday.getTime() - 6 * 86400000) };
+    else if (q.range === 'month') where.createdAt = { gte: new Date(now.getFullYear(), now.getMonth(), 1) };
+    else if (q.from || q.to) {
+      const range: Record<string, Date> = {};
+      if (q.from) range.gte = new Date(q.from);
+      if (q.to) range.lte = new Date(`${q.to}T23:59:59.999Z`);
+      where.createdAt = range;
+    }
+
+    const managers = await prisma.user.findMany({
+      where: { role: { in: ['SALES_MANAGER', 'HEAD_OF_SALES'] }, active: true },
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+    });
+
+    const grouped = await prisma.lead.groupBy({
+      by: ['assignedUserId', 'lastResult'],
+      where,
+      _count: { _all: true },
+    });
+
+    const table = managers.map((m) => {
+      const row: Record<string, string | number> = { managerId: m.id, managerName: m.name };
+      for (const r of RESULT_ENUM) row[r] = 0;
+      for (const g of grouped) {
+        if (g.assignedUserId === m.id && g.lastResult) row[g.lastResult] = g._count._all;
+      }
+      return row;
+    });
+
+    return reply.send({ table, results: RESULT_ENUM });
   });
 }
 
