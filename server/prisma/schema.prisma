@@ -156,6 +156,35 @@ enum ExpenseStatus {
   PAID
 }
 
+// Phase 5 (§42-§52)
+enum InventoryUnit {
+  PIECE
+  LITER
+  SET
+  OTHER
+}
+
+enum AfterSalesCategory {
+  ENGINE_OIL
+  OIL_FILTER
+  AIR_FILTER
+  CABIN_FILTER
+  FUEL_FILTER
+  BRAKE_FLUID
+  COOLANT
+  SPARK_PLUG
+  BRAKE_PADS
+  OTHER_PARTS
+  OTHER_CONSUMABLES
+}
+
+enum StockAdjustmentReason {
+  DAMAGED
+  PHYSICAL_INVENTORY_CORRECTION
+  RETURNED
+  OTHER
+}
+
 // ---------- CORE ----------
 
 model Brand {
@@ -196,6 +225,8 @@ model Dealership {
   soldCars   SoldCar[]
   expenses   Expense[]
   kpiBonuses KpiBonus[]
+  serviceVisits ServiceVisit[]
+  afterSalesItems AfterSalesInventoryItem[]
 
   @@index([active])
 }
@@ -233,6 +264,7 @@ model User {
   appointments    Appointment[]     @relation("AppointmentManager")
   reservations    VehicleReservation[] @relation("ReservationManager")
   soldCars        SoldCar[]         @relation("SoldCarManager")
+  serviceVisits   ServiceVisit[]    @relation("ServiceStaff")
 
   @@index([role, active])
 }
@@ -553,8 +585,18 @@ model SoldCar {
   vehicle         InventoryVehicle?     @relation(fields: [vehicleId], references: [id])
   customerBonuses VehicleCustomerBonus[]
   vinBonuses      VinDistributorBonus[]
+  serviceVisits   ServiceVisit[]
+  usageLinks      AfterSalesInventoryUsage[]
+
+  // AfterSales tracking (§42)
+  currentMileage      Int?
+  lastServiceDate     DateTime?
+  nextServiceMileage  Int?
+  nextServiceDate     DateTime?
+  afterSalesNotes     String?
 
   @@index([saleDate])
+  @@index([nextServiceDate])
   @@index([dealershipId])
   @@index([brandId])
 }
@@ -647,4 +689,111 @@ model FinanceSettings {
   taxBase     String   @default("VEHICLE_MARGIN")
   marginIsVatInclusive Boolean @default(true) // VAT-inclusive margin?
   updatedAt   DateTime @updatedAt
+}
+
+// ---------- AFTERSALES (§42-§52) ----------
+
+model ServiceVisit {
+  id                  String    @id @default(cuid())
+  soldCarId           String
+  dealershipId        String
+  serviceDate         DateTime  @default(now())
+  mileage             Int?
+  serviceStaffId      String?
+  workPerformed       String
+  extraWorkPerformed  String?
+  comment             String?
+  nextServiceMileage  Int?
+  nextServiceDate     DateTime?
+  serviceRevenue      Decimal   @db.Decimal(14, 2)
+  paymentMethod       PaymentMethod?
+  paymentDate         DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  soldCar     SoldCar @relation(fields: [soldCarId], references: [id], onDelete: Cascade)
+  dealership  Dealership @relation(fields: [dealershipId], references: [id])
+  serviceStaff User? @relation("ServiceStaff", fields: [serviceStaffId], references: [id])
+  inventoryUsage AfterSalesInventoryUsage[]
+
+  @@index([soldCarId])
+  @@index([serviceDate])
+  @@index([nextServiceDate])
+}
+
+model AfterSalesInventoryItem {
+  id                   String             @id @default(cuid())
+  dealershipId         String
+  category             AfterSalesCategory
+  itemName             String
+  compatibleBrandModel String?
+  partNumber           String?
+  unit                 InventoryUnit      @default(PIECE)
+  quantityOnHand       Decimal            @default(0) @db.Decimal(14, 3)
+  sellingPrice         Decimal            @db.Decimal(14, 2)
+  purchaseCost         Decimal            @db.Decimal(14, 2)
+  minimumStock         Decimal?           @db.Decimal(14, 3)
+  notes                String?
+  active               Boolean            @default(true)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  dealership  Dealership @relation(fields: [dealershipId], references: [id])
+  receipts    AfterSalesStockReceipt[]
+  usage       AfterSalesInventoryUsage[]
+  adjustments AfterSalesStockAdjustment[]
+
+  @@index([dealershipId])
+  @@index([category])
+}
+
+model AfterSalesStockReceipt {
+  id               String    @id @default(cuid())
+  itemId           String
+  quantityReceived Decimal   @db.Decimal(14, 3)
+  unitCost         Decimal   @db.Decimal(14, 2)
+  date             DateTime  @default(now())
+  supplier         String?
+  paymentMethod    PaymentMethod?
+  comment          String?
+  createdAt        DateTime  @default(now())
+
+  item AfterSalesInventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([itemId])
+}
+
+// Snapshot of price & cost at usage time — enables theft detection (§48).
+model AfterSalesInventoryUsage {
+  id                String   @id @default(cuid())
+  serviceVisitId    String
+  soldCarId         String
+  itemId            String
+  quantity          Decimal  @db.Decimal(14, 3)
+  sellingPriceSnapshot Decimal @db.Decimal(14, 2)
+  costSnapshot      Decimal  @db.Decimal(14, 2)
+  timestamp         DateTime @default(now())
+
+  serviceVisit ServiceVisit @relation(fields: [serviceVisitId], references: [id], onDelete: Cascade)
+  soldCar      SoldCar      @relation(fields: [soldCarId], references: [id], onDelete: Cascade)
+  item         AfterSalesInventoryItem @relation(fields: [itemId], references: [id])
+
+  @@index([serviceVisitId])
+  @@index([itemId])
+}
+
+model AfterSalesStockAdjustment {
+  id           String                 @id @default(cuid())
+  itemId       String
+  quantityBefore Decimal              @db.Decimal(14, 3)
+  quantityChange Decimal              @db.Decimal(14, 3)
+  quantityAfter  Decimal              @db.Decimal(14, 3)
+  userId       String?
+  date         DateTime               @default(now())
+  reason       StockAdjustmentReason
+  comment      String?
+
+  item AfterSalesInventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([itemId])
 }

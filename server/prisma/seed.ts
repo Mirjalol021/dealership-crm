@@ -176,6 +176,24 @@ async function main() {
     console.log('Demo KPI bonus created: 1');
   }
 
+  // Demo AfterSales inventory (§45) — idempotent by item name.
+  const asCount = await prisma.afterSalesInventoryItem.count();
+  if (asCount === 0) {
+    const items = [
+      { category: 'ENGINE_OIL', itemName: 'Mobil 5W-30', unit: 'LITER', sellingPrice: 90000, purchaseCost: 65000, quantityOnHand: 100, minimumStock: 20 },
+      { category: 'OIL_FILTER', itemName: 'Oil Filter (Geely)', unit: 'PIECE', sellingPrice: 45000, purchaseCost: 28000, quantityOnHand: 50, minimumStock: 10 },
+      { category: 'AIR_FILTER', itemName: 'Air Filter (universal)', unit: 'PIECE', sellingPrice: 60000, purchaseCost: 38000, quantityOnHand: 30, minimumStock: 8 },
+      { category: 'BRAKE_PADS', itemName: 'Brake Pads (front)', unit: 'SET', sellingPrice: 320000, purchaseCost: 210000, quantityOnHand: 15, minimumStock: 5 },
+      { category: 'COOLANT', itemName: 'Antifreeze G12', unit: 'LITER', sellingPrice: 35000, purchaseCost: 22000, quantityOnHand: 40, minimumStock: 10 },
+    ] as const;
+    for (const it of items) {
+      await prisma.afterSalesInventoryItem.create({
+        data: { dealershipId: dealership.id, ...it },
+      });
+    }
+    console.log(`Demo AfterSales items created: ${items.length}`);
+  }
+
   console.log('Seed done.');
 }
 

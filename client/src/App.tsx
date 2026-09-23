@@ -20,6 +20,11 @@ import { FinanceDashboardPage } from './pages/FinanceDashboardPage';
 import { ExpensesPage } from './pages/ExpensesPage';
 import { KpiBonusesPage } from './pages/KpiBonusesPage';
 import { FinanceSettingsPage } from './pages/FinanceSettingsPage';
+import { AfterSalesInventoryPage } from './pages/AfterSalesInventoryPage';
+import { ServiceVisitsPage } from './pages/ServiceVisitsPage';
+import { CustomersToCallPage } from './pages/CustomersToCallPage';
+import { StockMovementsPage } from './pages/StockMovementsPage';
+import { AfterSalesSoldCarsPage } from './pages/AfterSalesSoldCarsPage';
 
 function Home() {
   const { user } = useAuth();
@@ -54,10 +59,11 @@ export function App() {
         <Route path="/reservations" element={<ReservationsPage />} />
         <Route path="/sales" element={<PlaceholderPage labelKey="sales" />} />
         <Route path="/sold-cars" element={<SoldCarsPage />} />
-        <Route path="/aftersales" element={<PlaceholderPage labelKey="aftersales" />} />
-        <Route path="/aftersales/inventory" element={<PlaceholderPage labelKey="aftersalesInventory" />} />
-        <Route path="/customers-to-call" element={<PlaceholderPage labelKey="customersToCall" />} />
-        <Route path="/service-visits" element={<PlaceholderPage labelKey="serviceVisits" />} />
+        <Route path="/aftersales" element={<AfterSalesSoldCarsPage />} />
+        <Route path="/aftersales/inventory" element={<AfterSalesInventoryPage />} />
+        <Route path="/aftersales/stock-movements" element={<StockMovementsPage />} />
+        <Route path="/customers-to-call" element={<CustomersToCallPage />} />
+        <Route path="/service-visits" element={<ServiceVisitsPage />} />
         <Route path="/finance" element={<FinanceDashboardPage />} />
         <Route path="/expenses" element={<ExpensesPage />} />
         <Route path="/sold-cars-finance" element={<PlaceholderPage labelKey="soldCarsFinance" />} />

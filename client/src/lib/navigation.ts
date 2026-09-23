@@ -16,6 +16,7 @@ const ITEMS: Record<string, NavItem> = {
   sales: { path: '/sales', labelKey: 'sales', capability: 'sales.view' },
   aftersales: { path: '/aftersales', labelKey: 'aftersales', capability: 'aftersales.view' },
   aftersalesInventory: { path: '/aftersales/inventory', labelKey: 'aftersalesInventory', capability: 'aftersales.view' },
+  stockMovements: { path: '/aftersales/stock-movements', labelKey: 'stockMovements', capability: 'aftersales.view' },
   finance: { path: '/finance', labelKey: 'finance', capability: 'finance.view' },
   reports: { path: '/reports', labelKey: 'reports' },
   users: { path: '/users', labelKey: 'users', capability: 'users.manage' },
@@ -44,7 +45,7 @@ const ITEMS: Record<string, NavItem> = {
 const ROLE_NAV: Record<Role, string[]> = {
   SUPER_ADMIN: [
     'dashboard', 'leads', 'management', 'appointments', 'inventory', 'reservations', 'soldCars', 'sales',
-    'aftersales', 'aftersalesInventory', 'finance', 'expenses', 'distributorBonuses', 'financeSettings', 'reports', 'users', 'settings',
+    'aftersales', 'serviceVisits', 'aftersalesInventory', 'stockMovements', 'finance', 'expenses', 'distributorBonuses', 'financeSettings', 'reports', 'users', 'settings',
   ],
   HEAD_OF_SALES: [
     'dashboard', 'leads', 'management', 'appointments', 'inventory', 'reservations', 'soldCars', 'sales', 'reports',
@@ -56,7 +57,7 @@ const ROLE_NAV: Record<Role, string[]> = {
     'newLeads', 'followUps', 'qualified',
   ],
   SERVICE_STAFF: [
-    'customersToCall', 'soldCars', 'serviceVisits', 'aftersalesInventory',
+    'customersToCall', 'aftersales', 'serviceVisits', 'aftersalesInventory', 'stockMovements',
   ],
   FINANCE: [
     'financeOverview', 'expenses', 'distributorBonuses', 'financeSettings', 'reports',
