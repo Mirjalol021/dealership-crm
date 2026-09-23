@@ -145,6 +145,17 @@ enum BonusType {
   OTHER
 }
 
+// Phase 4 (§34-§40)
+enum ExpenseType {
+  FIXED
+  VARIABLE
+}
+
+enum ExpenseStatus {
+  PENDING
+  PAID
+}
+
 // ---------- CORE ----------
 
 model Brand {
@@ -162,6 +173,8 @@ model Brand {
   leads           Lead[]
   inventoryVehicles InventoryVehicle[]
   soldCars        SoldCar[]
+  expenses        Expense[]
+  kpiBonuses      KpiBonus[]
 
   @@index([active, sortOrder])
 }
@@ -181,6 +194,8 @@ model Dealership {
   appointments Appointment[]
   inventoryVehicles InventoryVehicle[]
   soldCars   SoldCar[]
+  expenses   Expense[]
+  kpiBonuses KpiBonus[]
 
   @@index([active])
 }
@@ -575,4 +590,61 @@ model VinDistributorBonus {
 
   @@index([soldCarId])
   @@index([status])
+}
+
+// ---------- FINANCE (§34, §36, §40) ----------
+
+// Distributor KPI bonus — separate from VIN bonus (§34).
+model KpiBonus {
+  id           String       @id @default(cuid())
+  month        String       // "2026-09"
+  dealershipId String?
+  brandId      String
+  amount       Decimal      @db.Decimal(14, 2)
+  status       BonusStatus  @default(EXPECTED)
+  receivedDate DateTime?
+  receivedVia  PaymentMethod?
+  comment      String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  dealership Dealership? @relation(fields: [dealershipId], references: [id])
+  brand      Brand       @relation(fields: [brandId], references: [id])
+
+  @@index([month])
+  @@index([status])
+}
+
+// Expense entry (§36-§38). accountingMonth vs paymentDate is critical.
+model Expense {
+  id              String        @id @default(cuid())
+  accountingMonth String        // "2026-08" — which month it BELONGS to
+  paymentDate     DateTime?     // when money ACTUALLY moved (null while Pending)
+  dealershipId    String?
+  brandId         String?       // null = Corporate
+  category        String        // free label; categories seeded
+  expenseType     ExpenseType
+  amount          Decimal       @db.Decimal(14, 2)
+  paymentMethod   PaymentMethod?
+  status          ExpenseStatus @default(PENDING)
+  comment         String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  dealership Dealership? @relation(fields: [dealershipId], references: [id])
+  brand      Brand?      @relation(fields: [brandId], references: [id])
+
+  @@index([accountingMonth])
+  @@index([paymentDate])
+  @@index([dealershipId])
+}
+
+// Configurable finance tax settings (§40). Single row.
+model FinanceSettings {
+  id          String   @id @default("singleton")
+  taxName     String   @default("VAT")
+  taxRate     Decimal  @default(12) @db.Decimal(6, 2) // percent
+  taxBase     String   @default("VEHICLE_MARGIN")
+  marginIsVatInclusive Boolean @default(true) // VAT-inclusive margin?
+  updatedAt   DateTime @updatedAt
 }

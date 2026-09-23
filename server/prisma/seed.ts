@@ -146,6 +146,36 @@ async function main() {
   }
   console.log(`Demo inventory vehicles created: ${invCreated}`);
 
+  // Finance settings singleton (§40).
+  await prisma.financeSettings.upsert({
+    where: { id: 'singleton' },
+    update: {},
+    create: { id: 'singleton', taxName: 'VAT', taxRate: 12, taxBase: 'VEHICLE_MARGIN', marginIsVatInclusive: true },
+  });
+
+  // Demo expenses (§36-§38): August salary paid in September (the spec example).
+  const expCount = await prisma.expense.count();
+  if (expCount === 0) {
+    await prisma.expense.createMany({
+      data: [
+        { accountingMonth: '2026-08', paymentDate: new Date('2026-09-08'), category: 'Salaries', expenseType: 'FIXED', amount: 80000000, paymentMethod: 'LLC_ACCOUNT', status: 'PAID', comment: 'Avgust oyligi' },
+        { accountingMonth: '2026-09', paymentDate: new Date('2026-09-05'), category: 'Rent', expenseType: 'FIXED', amount: 25000000, paymentMethod: 'LLC_ACCOUNT', status: 'PAID', comment: 'Ijara' },
+        { accountingMonth: '2026-09', paymentDate: null, category: 'Marketing', expenseType: 'VARIABLE', amount: 12000000, paymentMethod: null, status: 'PENDING', comment: 'Reklama tolanmagan' },
+        { accountingMonth: '2026-09', paymentDate: new Date('2026-09-15'), category: 'Utilities', expenseType: 'VARIABLE', amount: 4000000, paymentMethod: 'CASH', status: 'PAID' },
+      ],
+    });
+    console.log('Demo expenses created: 4');
+  }
+
+  // Demo KPI bonus (§34).
+  const kpiCount = await prisma.kpiBonus.count();
+  if (kpiCount === 0) {
+    await prisma.kpiBonus.create({
+      data: { month: '2026-09', brandId: brands[0].id, amount: 50000000, status: 'CONFIRMED', comment: 'Sentyabr Geely KPI' },
+    });
+    console.log('Demo KPI bonus created: 1');
+  }
+
   console.log('Seed done.');
 }
 

@@ -38,7 +38,8 @@
     "distributorBonuses": "Distributor Bonuses",
     "management": "Management",
     "kanban": "Kanban",
-    "reservations": "Reservations (Zalog)"
+    "reservations": "Reservations (Zalog)",
+    "taxSettings": "Tax Settings"
   },
   "roles": {
     "SUPER_ADMIN": "Super Admin",
@@ -217,5 +218,43 @@
     "card": "Card",
     "confirm": "Confirm",
     "markPaid": "Mark Paid"
+  },
+  "fin": {
+    "dashboard": "Finance Dashboard",
+    "profitView": "Profit View",
+    "cashFlow": "Cash Flow",
+    "turnover": "Sales Turnover",
+    "vehicleMargin": "Vehicle Margin",
+    "serviceRevenue": "Service Revenue",
+    "vinBonuses": "VIN Bonuses",
+    "kpiBonuses": "KPI Bonuses",
+    "customerBonuses": "Customer Bonuses",
+    "vat": "VAT Provision",
+    "totalExpenses": "Total Expenses",
+    "netResult": "Net Result",
+    "expenses": "Expenses",
+    "addExpense": "Add Expense",
+    "accountingMonth": "Accounting Month",
+    "paymentDate": "Payment Date",
+    "category": "Category",
+    "expenseType": "Expense Type",
+    "fixed": "Fixed",
+    "variable": "Variable",
+    "paymentMethod": "Payment Method",
+    "status": "Status",
+    "pending": "Pending",
+    "paid": "Paid",
+    "expensesVsRevenue": "Expenses vs Revenue",
+    "expenseComposition": "Expense Composition",
+    "taxSettings": "Tax Settings",
+    "taxName": "Tax Name",
+    "taxRate": "Tax Rate (%)",
+    "taxBase": "Tax Base",
+    "vatInclusive": "Margin is VAT-inclusive",
+    "kpiBonusTitle": "Distributor KPI Bonuses",
+    "addKpi": "Add KPI Bonus",
+    "month": "Month",
+    "expectedBonus": "Expected bonus",
+    "contribution": "Contribution"
   }
 }

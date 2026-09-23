@@ -38,7 +38,8 @@
     "distributorBonuses": "Distribyutor bonuslari",
     "management": "Rahbar tahlili",
     "kanban": "Kanban",
-    "reservations": "Bronlar (Zalog)"
+    "reservations": "Bronlar (Zalog)",
+    "taxSettings": "Soliq sozlamalari"
   },
   "roles": {
     "SUPER_ADMIN": "Bosh administrator",
@@ -217,5 +218,43 @@
     "card": "Karta",
     "confirm": "Tasdiqlash",
     "markPaid": "To'langan deb belgilash"
+  },
+  "fin": {
+    "dashboard": "Moliya paneli",
+    "profitView": "Foyda ko'rinishi",
+    "cashFlow": "Pul oqimi",
+    "turnover": "Savdo aylanmasi",
+    "vehicleMargin": "Avto marja",
+    "serviceRevenue": "Servis daromadi",
+    "vinBonuses": "VIN bonuslar",
+    "kpiBonuses": "KPI bonuslar",
+    "customerBonuses": "Mijoz bonuslari",
+    "vat": "QQS (VAT)",
+    "totalExpenses": "Jami xarajatlar",
+    "netResult": "Sof natija",
+    "expenses": "Xarajatlar",
+    "addExpense": "Xarajat qo'shish",
+    "accountingMonth": "Hisob oyi",
+    "paymentDate": "To'lov sanasi",
+    "category": "Kategoriya",
+    "expenseType": "Xarajat turi",
+    "fixed": "Doimiy",
+    "variable": "O'zgaruvchan",
+    "paymentMethod": "To'lov usuli",
+    "status": "Holat",
+    "pending": "Kutilmoqda",
+    "paid": "To'langan",
+    "expensesVsRevenue": "Xarajatlar va daromad",
+    "expenseComposition": "Xarajat tarkibi",
+    "taxSettings": "Soliq sozlamalari",
+    "taxName": "Soliq nomi",
+    "taxRate": "Soliq stavkasi (%)",
+    "taxBase": "Soliq bazasi",
+    "vatInclusive": "Marja QQSni o'z ichiga oladi",
+    "kpiBonusTitle": "Distribyutor KPI bonuslari",
+    "addKpi": "KPI bonus qo'shish",
+    "month": "Oy",
+    "expectedBonus": "Kutilayotgan bonus",
+    "contribution": "Hissa"
   }
 }

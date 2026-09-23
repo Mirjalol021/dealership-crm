@@ -37,13 +37,14 @@ const ITEMS: Record<string, NavItem> = {
   expenses: { path: '/expenses', labelKey: 'expenses', capability: 'finance.view' },
   soldCarsFinance: { path: '/sold-cars-finance', labelKey: 'soldCarsFinance', capability: 'finance.view' },
   distributorBonuses: { path: '/distributor-bonuses', labelKey: 'distributorBonuses', capability: 'finance.view' },
+  financeSettings: { path: '/finance/settings', labelKey: 'taxSettings', capability: 'finance.manage' },
 };
 
 // Ordered navigation per role (spec §77).
 const ROLE_NAV: Record<Role, string[]> = {
   SUPER_ADMIN: [
     'dashboard', 'leads', 'management', 'appointments', 'inventory', 'reservations', 'soldCars', 'sales',
-    'aftersales', 'aftersalesInventory', 'finance', 'reports', 'users', 'settings',
+    'aftersales', 'aftersalesInventory', 'finance', 'expenses', 'distributorBonuses', 'financeSettings', 'reports', 'users', 'settings',
   ],
   HEAD_OF_SALES: [
     'dashboard', 'leads', 'management', 'appointments', 'inventory', 'reservations', 'soldCars', 'sales', 'reports',
@@ -58,7 +59,7 @@ const ROLE_NAV: Record<Role, string[]> = {
     'customersToCall', 'soldCars', 'serviceVisits', 'aftersalesInventory',
   ],
   FINANCE: [
-    'financeOverview', 'expenses', 'soldCarsFinance', 'distributorBonuses', 'reports',
+    'financeOverview', 'expenses', 'distributorBonuses', 'financeSettings', 'reports',
   ],
 };
 

@@ -16,6 +16,10 @@ import { ManagementPage } from './pages/ManagementPage';
 import { InventoryPage } from './pages/InventoryPage';
 import { ReservationsPage } from './pages/ReservationsPage';
 import { SoldCarsPage } from './pages/SoldCarsPage';
+import { FinanceDashboardPage } from './pages/FinanceDashboardPage';
+import { ExpensesPage } from './pages/ExpensesPage';
+import { KpiBonusesPage } from './pages/KpiBonusesPage';
+import { FinanceSettingsPage } from './pages/FinanceSettingsPage';
 
 function Home() {
   const { user } = useAuth();
@@ -54,10 +58,11 @@ export function App() {
         <Route path="/aftersales/inventory" element={<PlaceholderPage labelKey="aftersalesInventory" />} />
         <Route path="/customers-to-call" element={<PlaceholderPage labelKey="customersToCall" />} />
         <Route path="/service-visits" element={<PlaceholderPage labelKey="serviceVisits" />} />
-        <Route path="/finance" element={<PlaceholderPage labelKey="finance" />} />
-        <Route path="/expenses" element={<PlaceholderPage labelKey="expenses" />} />
+        <Route path="/finance" element={<FinanceDashboardPage />} />
+        <Route path="/expenses" element={<ExpensesPage />} />
         <Route path="/sold-cars-finance" element={<PlaceholderPage labelKey="soldCarsFinance" />} />
-        <Route path="/distributor-bonuses" element={<PlaceholderPage labelKey="distributorBonuses" />} />
+        <Route path="/distributor-bonuses" element={<KpiBonusesPage />} />
+        <Route path="/finance/settings" element={<FinanceSettingsPage />} />
         <Route path="/reports" element={<PlaceholderPage labelKey="reports" />} />
         <Route path="/users" element={<UsersPage />} />
         <Route path="/settings" element={<SettingsPage />} />

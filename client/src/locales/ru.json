@@ -38,7 +38,8 @@
     "distributorBonuses": "Бонусы дистрибьютора",
     "management": "Аналитика руководителя",
     "kanban": "Kanban",
-    "reservations": "Брони (Залог)"
+    "reservations": "Брони (Залог)",
+    "taxSettings": "Налоговые настройки"
   },
   "roles": {
     "SUPER_ADMIN": "Супер Админ",
@@ -217,5 +218,43 @@
     "card": "Карта",
     "confirm": "Подтвердить",
     "markPaid": "Отметить оплаченным"
+  },
+  "fin": {
+    "dashboard": "Финансовая панель",
+    "profitView": "Вид прибыли",
+    "cashFlow": "Движение денег",
+    "turnover": "Оборот продаж",
+    "vehicleMargin": "Маржа авто",
+    "serviceRevenue": "Доход сервиса",
+    "vinBonuses": "VIN бонусы",
+    "kpiBonuses": "KPI бонусы",
+    "customerBonuses": "Бонусы клиентам",
+    "vat": "НДС (VAT)",
+    "totalExpenses": "Всего расходов",
+    "netResult": "Чистый результат",
+    "expenses": "Расходы",
+    "addExpense": "Добавить расход",
+    "accountingMonth": "Учётный месяц",
+    "paymentDate": "Дата оплаты",
+    "category": "Категория",
+    "expenseType": "Тип расхода",
+    "fixed": "Постоянный",
+    "variable": "Переменный",
+    "paymentMethod": "Способ оплаты",
+    "status": "Статус",
+    "pending": "Ожидает",
+    "paid": "Оплачен",
+    "expensesVsRevenue": "Расходы и доход",
+    "expenseComposition": "Состав расходов",
+    "taxSettings": "Налоговые настройки",
+    "taxName": "Название налога",
+    "taxRate": "Ставка налога (%)",
+    "taxBase": "База налога",
+    "vatInclusive": "Маржа включает НДС",
+    "kpiBonusTitle": "KPI бонусы дистрибьютора",
+    "addKpi": "Добавить KPI бонус",
+    "month": "Месяц",
+    "expectedBonus": "Ожидаемый бонус",
+    "contribution": "Вклад"
   }
 }
