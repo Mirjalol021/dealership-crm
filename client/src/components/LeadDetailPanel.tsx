@@ -69,6 +69,21 @@ export function LeadDetailPanel({ leadId }: { leadId: string }) {
       </section>
 
       <section>
+        <h3>{t('lead.assignmentHistory')}</h3>
+        <ul className="kv">
+          {detail.assignments.map((a) => (
+            <li key={a.id}>
+              <span className="muted">{t(`assignType.${a.assignmentType}`)}:</span>{' '}
+              {a.fromName ? `${a.fromName} → ` : ''}{a.toName ?? '—'}
+              {a.byName ? <span className="muted small"> (by {a.byName})</span> : null}
+              <span className="muted small"> · {new Date(a.createdAt).toLocaleString()}</span>
+            </li>
+          ))}
+          {detail.assignments.length === 0 && <li className="muted">—</li>}
+        </ul>
+      </section>
+
+      <section>
         <h3>{t('lead.activity')}</h3>
         <ul className="kv">
           {detail.activities.slice(0, 12).map((a) => (

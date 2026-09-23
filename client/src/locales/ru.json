@@ -132,7 +132,9 @@
     "week7": "7 дней",
     "thisMonth": "Этот месяц",
     "manager": "Менеджер",
-    "apply": "Применить"
+    "apply": "Применить",
+    "assignmentHistory": "История назначений",
+    "existingCustomer": "Существующий клиент найден — новый лид привязан к нему"
   },
   "pipelineStatus": {
     "NEW": "Новый",
@@ -361,5 +363,22 @@
     "webhookSecret": "Webhook secret",
     "fieldMapping": "Сопоставление полей",
     "allFormsTitle": "Формы Meta/Telegram"
+  },
+  "dash": {
+    "newToday": "Новые лиды сегодня",
+    "working": "В работе",
+    "visitPlanned": "Визит запланирован",
+    "soldMonth": "Продано в этом месяце",
+    "pool": "Лидов в пуле",
+    "overdue": "Просрочено",
+    "visitsToday": "Визиты сегодня",
+    "serviceDue": "Нужен сервис"
+  },
+  "assignType": {
+    "SELF_PICK": "Сам взял",
+    "CALL_CENTER": "Колл-центр",
+    "HEAD_OF_SALES": "Руководитель",
+    "SUPER_ADMIN": "Админ",
+    "REASSIGNMENT": "Переназначение"
   }
 }

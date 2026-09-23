@@ -11,6 +11,7 @@ interface Appt {
   customerName: string | null;
   phone: string;
   brand: string;
+  dealership: string;
   manager: string | null;
   leadId: string;
 }
@@ -50,6 +51,7 @@ export function AppointmentsPage() {
             <th>{t('lead.customer')}</th>
             <th>{t('lead.phone')}</th>
             <th>{t('lead.brand')}</th>
+            <th>{t('lead.dealership')}</th>
             <th>Date</th>
             <th>Status</th>
           </tr>
@@ -60,6 +62,7 @@ export function AppointmentsPage() {
               <td>{a.customerName ?? '—'}</td>
               <td>{a.phone}</td>
               <td>{a.brand}</td>
+              <td>{a.dealership}</td>
               <td>{new Date(a.date).toLocaleDateString()} {a.time ?? ''}</td>
               <td>
                 <select value={a.status} onChange={(e) => setStatus(a.id, e.target.value)}>
@@ -71,7 +74,7 @@ export function AppointmentsPage() {
             </tr>
           ))}
           {appts.length === 0 && (
-            <tr><td colSpan={5} className="muted" style={{ textAlign: 'center', padding: 24 }}>—</td></tr>
+            <tr><td colSpan={6} className="muted" style={{ textAlign: 'center', padding: 24 }}>—</td></tr>
           )}
         </tbody>
       </table>

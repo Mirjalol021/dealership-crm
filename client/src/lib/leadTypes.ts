@@ -64,7 +64,7 @@ export interface LeadDetail {
   comments: { id: string; text: string; author: string; createdAt: string }[];
   attempts: { id: string; attemptNo: number; result: LeadResult; createdAt: string }[];
   activities: { id: string; event: string; createdAt: string; oldValue: string | null; newValue: string | null }[];
-  assignments: { id: string; assignmentType: string; createdAt: string }[];
+  assignments: { id: string; assignmentType: string; createdAt: string; fromName: string | null; toName: string | null; byName: string | null }[];
   appointments: { id: string; date: string; time: string | null; status: string }[];
   formAnswers: { id: string; questionLabelSnapshot: string; answer: string }[];
 }

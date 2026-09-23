@@ -138,13 +138,13 @@ function SalesReport({ data }: { data: Record<string, unknown> | null }) {
 function MarketingReport({ data }: { data: Record<string, unknown> | null }) {
   const { t } = useTranslation();
   if (!data) return <div className="loading">{t('common.loading')}</div>;
-  const bySource = data.bySource as { source: string; leads: number; sold: number }[];
+  const bySource = data.bySource as { source: string; leads: number; visits: number; sold: number }[];
   return (
     <div className="card">
       <h2>{t('rep.bySource')}</h2>
       <table className="table">
-        <thead><tr><th>{t('lead.source')}</th><th>{t('rep.leads')}</th><th>{t('rep.sold')}</th></tr></thead>
-        <tbody>{bySource.map((s) => <tr key={s.source}><td>{t(`sourceLabel.${s.source}`)}</td><td>{s.leads}</td><td>{s.sold}</td></tr>)}</tbody>
+        <thead><tr><th>{t('lead.source')}</th><th>{t('rep.leads')}</th><th>{t('rep.visits')}</th><th>{t('rep.sold')}</th></tr></thead>
+        <tbody>{bySource.map((s) => <tr key={s.source}><td>{t(`sourceLabel.${s.source}`)}</td><td>{s.leads}</td><td>{s.visits}</td><td>{s.sold}</td></tr>)}</tbody>
       </table>
     </div>
   );

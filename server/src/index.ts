@@ -18,6 +18,7 @@ import { afterSalesRoutes } from './routes/aftersales.routes.js';
 import { integrationRoutes } from './routes/integrations.routes.js';
 import { reportRoutes } from './routes/reports.routes.js';
 import { importExportRoutes } from './routes/importExport.routes.js';
+import { dashboardRoutes } from './routes/dashboard.routes.js';
 
 export async function buildServer() {
   const app = Fastify({ logger: { level: config.isProd ? 'info' : 'debug' } });
@@ -48,6 +49,7 @@ export async function buildServer() {
   await app.register(integrationRoutes);
   await app.register(reportRoutes);
   await app.register(importExportRoutes);
+  await app.register(dashboardRoutes);
 
   return app;
 }

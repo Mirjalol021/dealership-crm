@@ -132,7 +132,9 @@
     "week7": "7 days",
     "thisMonth": "This month",
     "manager": "Manager",
-    "apply": "Apply"
+    "apply": "Apply",
+    "assignmentHistory": "Assignment History",
+    "existingCustomer": "Existing customer found — new lead linked to it"
   },
   "pipelineStatus": {
     "NEW": "New",
@@ -361,5 +363,22 @@
     "webhookSecret": "Webhook Secret",
     "fieldMapping": "Field Mapping",
     "allFormsTitle": "Meta/Telegram Forms"
+  },
+  "dash": {
+    "newToday": "New Leads Today",
+    "working": "Working",
+    "visitPlanned": "Visit Planned",
+    "soldMonth": "Sold This Month",
+    "pool": "Lead Pool",
+    "overdue": "Overdue",
+    "visitsToday": "Visits Today",
+    "serviceDue": "Service Due"
+  },
+  "assignType": {
+    "SELF_PICK": "Self-Pick",
+    "CALL_CENTER": "Call Center",
+    "HEAD_OF_SALES": "Head of Sales",
+    "SUPER_ADMIN": "Super Admin",
+    "REASSIGNMENT": "Reassignment"
   }
 }

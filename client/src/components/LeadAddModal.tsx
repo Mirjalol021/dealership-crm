@@ -22,6 +22,7 @@ export function LeadAddModal({ onClose, onCreated }: { onClose: () => void; onCr
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
 
   useEffect(() => {
     Promise.all([
@@ -39,8 +40,13 @@ export function LeadAddModal({ onClose, onCreated }: { onClose: () => void; onCr
     setBusy(true);
     setError('');
     try {
-      await api.post('/api/leads', { phone, name, brandId, modelInterest: model, dealershipId, source, note });
-      onCreated();
+      const res = await api.post<{ customerExisted: boolean }>('/api/leads', { phone, name, brandId, modelInterest: model, dealershipId, source, note });
+      if (res.customerExisted) {
+        setNotice(t('lead.existingCustomer'));
+        setTimeout(onCreated, 900); // let the user see the notice
+      } else {
+        onCreated();
+      }
     } catch {
       setError('Failed');
     } finally {
@@ -79,6 +85,7 @@ export function LeadAddModal({ onClose, onCreated }: { onClose: () => void; onCr
         <label>{t('lead.note')}
           <input value={note} onChange={(e) => setNote(e.target.value)} />
         </label>
+        {notice && <div className="ok-msg">{notice}</div>}
         {error && <div className="error">{error}</div>}
         <div className="modal-actions">
           <button className="btn-ghost" onClick={onClose}>{t('lead.cancel')}</button>

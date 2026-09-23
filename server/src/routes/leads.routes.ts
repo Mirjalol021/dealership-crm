@@ -219,8 +219,11 @@ export async function leadRoutes(app: FastifyInstance): Promise<void> {
     const d = parsed.data;
 
     const normalized = normalizePhone(d.phone);
+    let customerExisted = false;
     const lead = await prisma.$transaction(async (tx) => {
-      const { customerId } = await findOrCreateCustomer(tx, normalized, d.name ?? null);
+      const res = await findOrCreateCustomer(tx, normalized, d.name ?? null);
+      const customerId = res.customerId;
+      customerExisted = res.existed;
       const created = await tx.lead.create({
         data: {
           customerId,
@@ -241,7 +244,7 @@ export async function leadRoutes(app: FastifyInstance): Promise<void> {
       return created;
     });
 
-    return reply.code(201).send({ lead: { id: lead.id } });
+    return reply.code(201).send({ lead: { id: lead.id }, customerExisted });
   });
 
   // --- Lead detail (§10, §19-§22) ---
@@ -267,10 +270,28 @@ export async function leadRoutes(app: FastifyInstance): Promise<void> {
     if (!scopeToUser(lead, user) && user.role !== 'SUPER_ADMIN') {
       return reply.code(403).send({ error: 'FORBIDDEN' });
     }
+    // Enrich assignment history with user names (§22).
+    const userIds = new Set<string>();
+    for (const a of lead.assignments) {
+      if (a.fromUserId) userIds.add(a.fromUserId);
+      if (a.toUserId) userIds.add(a.toUserId);
+      if (a.assignedById) userIds.add(a.assignedById);
+    }
+    const users = await prisma.user.findMany({ where: { id: { in: [...userIds] } }, select: { id: true, name: true } });
+    const nameById = new Map(users.map((u) => [u.id, u.name]));
+
     return reply.send({
       lead: {
         ...lead,
         comments: lead.comments.map((c) => ({ id: c.id, text: c.text, author: c.author.name, createdAt: c.createdAt })),
+        assignments: lead.assignments.map((a) => ({
+          id: a.id,
+          assignmentType: a.assignmentType,
+          createdAt: a.createdAt,
+          fromName: a.fromUserId ? nameById.get(a.fromUserId) ?? '—' : null,
+          toName: a.toUserId ? nameById.get(a.toUserId) ?? '—' : null,
+          byName: a.assignedById ? nameById.get(a.assignedById) ?? '—' : null,
+        })),
       },
     });
   });

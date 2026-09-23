@@ -47,15 +47,16 @@ export async function importExportRoutes(app: FastifyInstance): Promise<void> {
       if (q.brandId) where.brandId = q.brandId;
       const leads = await prisma.lead.findMany({
         where,
-        include: { customer: true, brand: true, dealership: true, assignedUser: { select: { name: true } } },
+        include: { customer: true, brand: true, dealership: true, assignedUser: { select: { name: true } }, comments: { orderBy: { createdAt: 'desc' } } },
         orderBy: { createdAt: 'desc' },
         take: 5000,
       });
-      headers = ['Created', 'Customer', 'Phone', 'Dealership', 'Brand', 'Model', 'Source', 'Campaign', 'Manager', 'Pipeline', 'LastResult', 'NextFollowUp'];
+      headers = ['Created', 'Customer', 'Phone', 'Dealership', 'Brand', 'Model', 'Source', 'Campaign', 'Manager', 'Pipeline', 'LastResult', 'NextFollowUp', 'Comments'];
       rows = leads.map((l) => [
         l.createdAt.toISOString(), l.customer.name, l.customer.primaryPhone, l.dealership.dealershipName,
         l.brand.name, l.modelInterest, l.source, l.campaign, l.assignedUser?.name ?? '',
         l.pipelineStatus, l.lastResult, l.nextFollowUpAt?.toISOString() ?? '',
+        l.comments.map((c) => c.text).join(' | '),
       ]);
     } else if (type === 'sales') {
       sheet = 'Sales';

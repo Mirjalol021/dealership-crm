@@ -132,7 +132,9 @@
     "week7": "7 kun",
     "thisMonth": "Bu oy",
     "manager": "Menejer",
-    "apply": "Qo'llash"
+    "apply": "Qo'llash",
+    "assignmentHistory": "Tayinlash tarixi",
+    "existingCustomer": "Mavjud mijoz topildi — yangi lid unga bog'landi"
   },
   "pipelineStatus": {
     "NEW": "Yangi",
@@ -361,5 +363,22 @@
     "webhookSecret": "Webhook secret",
     "fieldMapping": "Maydon moslashuvi",
     "allFormsTitle": "Meta/Telegram formalari"
+  },
+  "dash": {
+    "newToday": "Bugun yangi lidlar",
+    "working": "Ishlanayotgan",
+    "visitPlanned": "Tashrif rejalashtirilgan",
+    "soldMonth": "Bu oy sotilgan",
+    "pool": "Havzadagi lidlar",
+    "overdue": "Muddati o'tgan",
+    "visitsToday": "Bugungi tashriflar",
+    "serviceDue": "Servis kerak"
+  },
+  "assignType": {
+    "SELF_PICK": "O'zi oldi",
+    "CALL_CENTER": "Call-markaz",
+    "HEAD_OF_SALES": "Sotuv boshlig'i",
+    "SUPER_ADMIN": "Admin",
+    "REASSIGNMENT": "Qayta tayinlash"
   }
 }

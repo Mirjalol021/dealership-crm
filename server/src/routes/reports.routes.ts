@@ -88,10 +88,22 @@ export async function reportRoutes(app: FastifyInstance): Promise<void> {
     });
     const soldMap = new Map(soldBySource.map((s) => [s.source, s._count._all]));
 
+    // Visits by source: appointments joined to their lead's source.
+    const appts = await prisma.appointment.findMany({
+      where: r.gte ? { date: { gte: r.gte, ...(r.lt ? { lt: r.lt } : {}) } } : {},
+      include: { lead: { select: { source: true } } },
+    });
+    const visitsMap = new Map<string, number>();
+    for (const a of appts) {
+      const src = a.lead?.source ?? 'OTHER';
+      visitsMap.set(src, (visitsMap.get(src) ?? 0) + 1);
+    }
+
     return reply.send({
       bySource: bySource.map((s) => ({
         source: s.source,
         leads: s._count._all,
+        visits: visitsMap.get(s.source) ?? 0,
         sold: soldMap.get(s.source) ?? 0,
       })),
     });

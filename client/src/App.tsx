@@ -6,7 +6,6 @@ import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { UsersPage } from './pages/UsersPage';
-import { PlaceholderPage } from './pages/PlaceholderPage';
 import { TodayPage } from './pages/TodayPage';
 import { LeadPoolPage } from './pages/LeadPoolPage';
 import { MyLeadsPage } from './pages/MyLeadsPage';
@@ -26,6 +25,7 @@ import { CustomersToCallPage } from './pages/CustomersToCallPage';
 import { StockMovementsPage } from './pages/StockMovementsPage';
 import { AfterSalesSoldCarsPage } from './pages/AfterSalesSoldCarsPage';
 import { ReportsPage } from './pages/ReportsPage';
+import { SalesPage } from './pages/SalesPage';
 import { ImportPage } from './pages/ImportPage';
 import { LeadFormsPage } from './pages/LeadFormsPage';
 
@@ -60,7 +60,7 @@ export function App() {
         <Route path="/management" element={<ManagementPage />} />
         <Route path="/inventory" element={<InventoryPage />} />
         <Route path="/reservations" element={<ReservationsPage />} />
-        <Route path="/sales" element={<PlaceholderPage labelKey="sales" />} />
+        <Route path="/sales" element={<SalesPage />} />
         <Route path="/sold-cars" element={<SoldCarsPage />} />
         <Route path="/aftersales" element={<AfterSalesSoldCarsPage />} />
         <Route path="/aftersales/inventory" element={<AfterSalesInventoryPage />} />
@@ -69,7 +69,7 @@ export function App() {
         <Route path="/service-visits" element={<ServiceVisitsPage />} />
         <Route path="/finance" element={<FinanceDashboardPage />} />
         <Route path="/expenses" element={<ExpensesPage />} />
-        <Route path="/sold-cars-finance" element={<PlaceholderPage labelKey="soldCarsFinance" />} />
+        <Route path="/sold-cars-finance" element={<SoldCarsPage />} />
         <Route path="/distributor-bonuses" element={<KpiBonusesPage />} />
         <Route path="/finance/settings" element={<FinanceSettingsPage />} />
         <Route path="/reports" element={<ReportsPage />} />
