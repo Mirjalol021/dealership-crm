@@ -7,6 +7,9 @@ import {
 } from '../auth/session.js';
 import { requireAuth } from '../auth/guard.js';
 import { ROLE_CAPABILITIES, type Role } from '../auth/permissions.js';
+import {
+  isLoginBlocked, recordFailedLogin, clearLoginAttempts,
+} from '../auth/loginThrottle.js';
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -20,16 +23,29 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(400).send({ error: 'INVALID_INPUT' });
     }
     const { email, password } = parsed.data;
+    const ip = req.ip || 'unknown';
+
+    // Brute-force protection: block repeated failures for this ip+email.
+    const pre = isLoginBlocked(ip, email);
+    if (!pre.allowed) {
+      return reply
+        .code(429)
+        .header('Retry-After', String(pre.retryAfterSeconds))
+        .send({ error: 'TOO_MANY_ATTEMPTS', retryAfterSeconds: pre.retryAfterSeconds });
+    }
 
     const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
     if (!user || !user.active) {
+      recordFailedLogin(ip, email);
       return reply.code(401).send({ error: 'INVALID_CREDENTIALS' });
     }
     const ok = await verifyPassword(password, user.passwordHash);
     if (!ok) {
+      recordFailedLogin(ip, email);
       return reply.code(401).send({ error: 'INVALID_CREDENTIALS' });
     }
 
+    clearLoginAttempts(ip, email);
     const token = await createSession(user.id, req);
     setSessionCookie(reply, token);
 

@@ -3,6 +3,7 @@ import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import { config } from './config.js';
 import { attachUser } from './auth/guard.js';
+import { registerErrorHandler } from './lib/errorHandler.js';
 import { authRoutes } from './routes/auth.routes.js';
 import { brandRoutes } from './routes/brands.routes.js';
 import { dealershipRoutes } from './routes/dealerships.routes.js';
@@ -23,14 +24,32 @@ import { dashboardRoutes } from './routes/dashboard.routes.js';
 export async function buildServer() {
   const app = Fastify({ logger: { level: config.isProd ? 'info' : 'debug' } });
 
+  // Keep the raw body for webhook signature validation (Meta §56).
+  // Fastify parses JSON normally, but we also stash a raw string copy so HMACs can be checked.
+  app.addContentTypeParser(
+    'application/json',
+    { parseAs: 'string' },
+    (req, body, done) => {
+      (req as unknown as { rawBody?: string }).rawBody = body as string;
+      try {
+        done(null, body.length ? JSON.parse(body as string) : {});
+      } catch (err) {
+        done(err as Error, undefined);
+      }
+    },
+  );
+
   await app.register(cookie, { secret: config.sessionSecret });
   await app.register(cors, {
-    origin: true, // dev: allow the Vite frontend
+    origin: config.isProd ? config.corsOrigins : true, // dev: allow the Vite frontend
     credentials: true,
   });
 
   // Attach req.user (if any) to every request before route handlers run.
   app.addHook('onRequest', attachUser);
+
+  // Centralized error handling: never leak stack traces (§73, hardening).
+  registerErrorHandler(app);
 
   app.get('/api/health', async () => ({ ok: true, env: config.env }));
 

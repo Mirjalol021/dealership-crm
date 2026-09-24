@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../db.js';
 import { requirePermission } from '../auth/guard.js';
 import { ingestLead, applyMapping, type IncomingAnswer } from '../lib/leadIngest.js';
+import { verifyMetaSignature } from '../lib/webhookSignature.js';
 
 export async function integrationRoutes(app: FastifyInstance): Promise<void> {
   // ---------- Meta Lead Ads (§56) ----------
@@ -30,6 +31,22 @@ export async function integrationRoutes(app: FastifyInstance): Promise<void> {
       brandId?: string;
       answers?: IncomingAnswer[];
     };
+
+    // Determine which connector this payload belongs to (by form/brand/dealership),
+    // then validate the X-Hub-Signature-256 HMAC against its appSecret (§56).
+    const signature = (req.headers['x-hub-signature-256'] as string | undefined) ?? undefined;
+    const connectors = await prisma.metaConnectorSettings.findMany({ where: { active: true } });
+    const relevant = connectors.filter((c) =>
+      (!c.brandId || c.brandId === body?.brandId) &&
+      (!c.dealershipId || c.dealershipId === body?.dealershipId),
+    );
+    const secret = relevant.find((c) => c.appSecret)?.appSecret ?? connectors.find((c) => c.appSecret)?.appSecret;
+
+    const rawBody = (req as unknown as { rawBody?: string }).rawBody;
+    if (!verifyMetaSignature(rawBody, signature, secret ?? undefined)) {
+      req.log.warn('Meta webhook rejected: invalid or missing signature');
+      return reply.code(401).send({ error: 'INVALID_SIGNATURE' });
+    }
 
     if (!body?.brandId || !body?.dealershipId) {
       return reply.code(400).send({ error: 'MISSING_BRAND_OR_DEALERSHIP' });
