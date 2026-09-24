@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
 import type { LeadDetail, LeadResult } from '../lib/leadTypes';
 import { ResultButtons } from './ResultButtons';
+import { AssignModal } from './AssignModal';
 import { useAuth } from '../lib/auth';
 
 // Full lead detail modal with contact-result entry (§12, §14, §19-§22).
@@ -21,6 +22,7 @@ export function LeadDetailModal({ leadId, onClose }: { leadId: string; onClose: 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
+  const [showAssign, setShowAssign] = useState(false);
 
   async function load() {
     const r = await api.get<{ lead: LeadDetail }>(`/api/leads/${leadId}`);
@@ -38,6 +40,7 @@ export function LeadDetailModal({ leadId, onClose }: { leadId: string; onClose: 
   const needsAppointment = result === 'VISIT_PLANNED';
 
   const canWork = can('leads.take') || can('leads.view.own') || can('leads.view.all');
+  const canAssign = can('leads.assign');
 
   async function saveResult() {
     if (!result) return;
@@ -55,12 +58,15 @@ export function LeadDetailModal({ leadId, onClose }: { leadId: string; onClose: 
         comment: comment || undefined,
       });
       setSaved(true);
+      const wasInterested = result === 'INTERESTED';
       setResult(null);
       setFollowUp('');
       setAppointmentDate('');
       setComment('');
       await load();
       setTimeout(() => setSaved(false), 2000);
+      // Call Center qualification: after "Interested", offer to assign to a manager.
+      if (wasInterested && canAssign) setShowAssign(true);
     } catch {
       setError(t('common.saveFailed'));
     } finally {
@@ -207,9 +213,20 @@ export function LeadDetailModal({ leadId, onClose }: { leadId: string; onClose: 
             </section>
 
             <div className="modal-actions">
+              {canAssign && (
+                <button className="btn-primary" onClick={() => setShowAssign(true)}>{t('lead.assign')}</button>
+              )}
               <button className="btn-ghost" onClick={onClose}>{t('common.close')}</button>
             </div>
           </>
+        )}
+
+        {showAssign && (
+          <AssignModal
+            leadId={leadId}
+            onClose={() => setShowAssign(false)}
+            onDone={() => { setShowAssign(false); load(); }}
+          />
         )}
       </div>
     </div>
