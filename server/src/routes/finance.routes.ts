@@ -6,6 +6,7 @@ import {
   vehicleContribution, netResult, monthKey, serviceContribution as computeServiceContribution, type TaxSettings,
 } from '../lib/finance.js';
 import { scopeWhere } from '../auth/scope.js';
+import { logAuditSafe } from '../lib/audit.js';
 
 async function taxSettings(): Promise<TaxSettings> {
   let s = await prisma.financeSettings.findUnique({ where: { id: 'singleton' } });
@@ -131,6 +132,11 @@ export async function financeRoutes(app: FastifyInstance): Promise<void> {
       },
       include: { dealership: { select: { dealershipName: true } }, brand: { select: { name: true } } },
     });
+    await logAuditSafe({
+      actorId: req.user!.id, entity: 'Expense', entityId: expense.id, action: 'CREATE',
+      summary: `Expense ${d.category} ${d.amount} (${d.accountingMonth})`,
+      newValue: { accountingMonth: d.accountingMonth, category: d.category, expenseType: d.expenseType, amount: d.amount, status: d.status ?? 'PENDING' },
+    });
     return reply.code(201).send({ expense: expenseCard(expense) });
   });
 
@@ -151,6 +157,7 @@ export async function financeRoutes(app: FastifyInstance): Promise<void> {
     const parsed = schema.safeParse(req.body);
     if (!parsed.success) return reply.code(400).send({ error: 'INVALID_INPUT' });
     const d = parsed.data;
+    const before = await prisma.expense.findUnique({ where: { id } });
     const expense = await prisma.expense.update({
       where: { id },
       data: {
@@ -158,6 +165,12 @@ export async function financeRoutes(app: FastifyInstance): Promise<void> {
         ...(d.paymentDate !== undefined ? { paymentDate: d.paymentDate ? new Date(d.paymentDate) : null } : {}),
       },
       include: { dealership: { select: { dealershipName: true } }, brand: { select: { name: true } } },
+    });
+    await logAuditSafe({
+      actorId: req.user!.id, entity: 'Expense', entityId: id, action: 'UPDATE',
+      summary: `Updated expense ${expense.category}`,
+      oldValue: before ? { amount: Number(before.amount), status: before.status, accountingMonth: before.accountingMonth } : null,
+      newValue: d,
     });
     return reply.send({ expense: expenseCard(expense) });
   });
@@ -205,6 +218,11 @@ export async function financeRoutes(app: FastifyInstance): Promise<void> {
       },
       include: { brand: { select: { name: true } }, dealership: { select: { dealershipName: true } } },
     });
+    await logAuditSafe({
+      actorId: req.user!.id, entity: 'KpiBonus', entityId: bonus.id, action: 'CREATE',
+      summary: `KPI bonus ${d.amount} (${d.month})`,
+      newValue: { month: d.month, brandId: d.brandId, amount: d.amount, status: d.status ?? 'EXPECTED' },
+    });
     return reply.code(201).send({ bonus: kpiCard(bonus) });
   });
 
@@ -221,6 +239,7 @@ export async function financeRoutes(app: FastifyInstance): Promise<void> {
     const parsed = schema.safeParse(req.body);
     if (!parsed.success) return reply.code(400).send({ error: 'INVALID_INPUT' });
     const d = parsed.data;
+    const before = await prisma.kpiBonus.findUnique({ where: { id } });
     const bonus = await prisma.kpiBonus.update({
       where: { id },
       data: {
@@ -228,6 +247,13 @@ export async function financeRoutes(app: FastifyInstance): Promise<void> {
         ...(d.receivedDate !== undefined ? { receivedDate: d.receivedDate ? new Date(d.receivedDate) : null } : {}),
       },
       include: { brand: { select: { name: true } }, dealership: { select: { dealershipName: true } } },
+    });
+    await logAuditSafe({
+      actorId: req.user!.id, entity: 'KpiBonus', entityId: id,
+      action: before && before.status !== bonus.status ? 'STATUS_CHANGE' : 'UPDATE',
+      summary: `KPI bonus ${before?.status ?? ''} -> ${bonus.status}`,
+      oldValue: before ? { amount: Number(before.amount), status: before.status } : null,
+      newValue: { amount: Number(bonus.amount), status: bonus.status },
     });
     return reply.send({ bonus: kpiCard(bonus) });
   });

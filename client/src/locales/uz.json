@@ -41,7 +41,8 @@
     "reservations": "Bronlar (Zalog)",
     "taxSettings": "Soliq sozlamalari",
     "stockMovements": "Ombor harakati",
-    "importData": "Import / Eksport"
+    "importData": "Import / Eksport",
+    "auditLog": "Amallar jurnali"
   },
   "roles": {
     "SUPER_ADMIN": "Bosh administrator",
@@ -390,5 +391,22 @@
     "HEAD_OF_SALES": "Sotuv boshlig'i",
     "SUPER_ADMIN": "Admin",
     "REASSIGNMENT": "Qayta tayinlash"
+  },
+  "audit": {
+    "title": "Amallar jurnali",
+    "entity": "Obyekt",
+    "action": "Amal",
+    "actor": "Foydalanuvchi",
+    "time": "Vaqt",
+    "summary": "Tavsif",
+    "records": "Yozuvlar",
+    "oldValue": "Eski qiymat",
+    "newValue": "Yangi qiymat",
+    "act": {
+      "CREATE": "Yaratildi",
+      "UPDATE": "O'zgartirildi",
+      "DELETE": "O'chirildi",
+      "STATUS_CHANGE": "Status o'zgardi"
+    }
   }
 }

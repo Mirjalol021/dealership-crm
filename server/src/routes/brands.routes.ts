@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../db.js';
 import { requirePermission } from '../auth/guard.js';
+import { logAuditSafe } from '../lib/audit.js';
 
 const createSchema = z.object({
   name: z.string().min(1),
@@ -30,6 +31,7 @@ export async function brandRoutes(app: FastifyInstance): Promise<void> {
       const parsed = createSchema.safeParse(req.body);
       if (!parsed.success) return reply.code(400).send({ error: 'INVALID_INPUT', details: parsed.error.flatten() });
       const brand = await prisma.brand.create({ data: { ...parsed.data, active: parsed.data.active ?? true } });
+      await logAuditSafe({ actorId: req.user!.id, entity: 'Brand', entityId: brand.id, action: 'CREATE', summary: `Created brand ${brand.name}`, newValue: { name: brand.name, code: brand.code } });
       return reply.code(201).send({ brand });
     },
   );
@@ -41,7 +43,9 @@ export async function brandRoutes(app: FastifyInstance): Promise<void> {
       const { id } = req.params as { id: string };
       const parsed = updateSchema.safeParse(req.body);
       if (!parsed.success) return reply.code(400).send({ error: 'INVALID_INPUT', details: parsed.error.flatten() });
+      const before = await prisma.brand.findUnique({ where: { id } });
       const brand = await prisma.brand.update({ where: { id }, data: parsed.data });
+      await logAuditSafe({ actorId: req.user!.id, entity: 'Brand', entityId: id, action: 'UPDATE', summary: `Updated brand ${brand.name}`, oldValue: before ? { name: before.name, active: before.active } : null, newValue: parsed.data });
       return reply.send({ brand });
     },
   );

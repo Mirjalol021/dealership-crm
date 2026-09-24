@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../db.js';
 import { requirePermission } from '../auth/guard.js';
 import { hashPassword } from '../auth/passwords.js';
+import { logAuditSafe } from '../lib/audit.js';
 
 const ROLES = ['SUPER_ADMIN', 'HEAD_OF_SALES', 'SALES_MANAGER', 'CALL_CENTER', 'SERVICE_STAFF', 'FINANCE'] as const;
 const LANGS = ['uz', 'ru', 'en'] as const;
@@ -83,6 +84,11 @@ export async function userRoutes(app: FastifyInstance): Promise<void> {
         },
         include: { dealershipAccess: true, brandAccess: true },
       });
+      await logAuditSafe({
+        actorId: req.user!.id, entity: 'User', entityId: user.id, action: 'CREATE',
+        summary: `Created user ${user.email} (${user.role})`,
+        newValue: { email: user.email, role: user.role, active: user.active, dealershipIds, brandIds },
+      });
       return reply.code(201).send({ user: publicUser(user) });
     },
   );
@@ -119,6 +125,11 @@ export async function userRoutes(app: FastifyInstance): Promise<void> {
           },
           include: { dealershipAccess: true, brandAccess: true },
         });
+      });
+      await logAuditSafe({
+        actorId: req.user!.id, entity: 'User', entityId: id, action: 'UPDATE',
+        summary: `Updated user ${user.email}`,
+        newValue: { role: user.role, active: user.active, ...(dealershipIds ? { dealershipIds } : {}), ...(brandIds ? { brandIds } : {}), passwordChanged: !!password },
       });
       return reply.send({ user: publicUser(user) });
     },

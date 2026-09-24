@@ -854,3 +854,32 @@ model ImportBatch {
 
   @@index([type])
 }
+
+// ---------- AUDIT (§75) ----------
+
+// Simple audit trail. Not a huge audit module — just important business events
+// (sales, expenses, bonuses, stock movement, reservations, vehicle status, users,
+// brands/dealerships). Leads keep their own richer LeadActivity/LeadAssignment.
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  STATUS_CHANGE
+}
+
+model AuditLog {
+  id         String      @id @default(cuid())
+  actorId    String?     // user who performed the action (null for system/webhook)
+  entity     String      // e.g. "SoldCar", "Expense", "VinDistributorBonus"
+  entityId   String
+  action     AuditAction
+  summary    String?     // short human-readable description
+  oldValue   Json?
+  newValue   Json?
+  createdAt  DateTime    @default(now())
+
+  @@index([entity, entityId])
+  @@index([actorId])
+  @@index([createdAt])
+  @@index([entity, action])
+}

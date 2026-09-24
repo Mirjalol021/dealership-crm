@@ -41,7 +41,8 @@
     "reservations": "Брони (Залог)",
     "taxSettings": "Налоговые настройки",
     "stockMovements": "Движение склада",
-    "importData": "Импорт / Экспорт"
+    "importData": "Импорт / Экспорт",
+    "auditLog": "Журнал действий"
   },
   "roles": {
     "SUPER_ADMIN": "Супер Админ",
@@ -390,5 +391,22 @@
     "HEAD_OF_SALES": "Руководитель",
     "SUPER_ADMIN": "Админ",
     "REASSIGNMENT": "Переназначение"
+  },
+  "audit": {
+    "title": "Журнал действий",
+    "entity": "Объект",
+    "action": "Действие",
+    "actor": "Пользователь",
+    "time": "Время",
+    "summary": "Описание",
+    "records": "Записей",
+    "oldValue": "Прежнее значение",
+    "newValue": "Новое значение",
+    "act": {
+      "CREATE": "Создано",
+      "UPDATE": "Изменено",
+      "DELETE": "Удалено",
+      "STATUS_CHANGE": "Смена статуса"
+    }
   }
 }

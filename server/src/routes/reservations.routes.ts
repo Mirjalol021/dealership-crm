@@ -5,6 +5,7 @@ import { requirePermission } from '../auth/guard.js';
 import { scopeWhere, canAccessScope } from '../auth/scope.js';
 import { normalizePhone } from '../lib/phone.js';
 import { findOrCreateCustomer } from '../lib/leadService.js';
+import { logAudit } from '../lib/audit.js';
 
 const createSchema = z.object({
   vehicleId: z.string(),
@@ -80,7 +81,7 @@ export async function reservationRoutes(app: FastifyInstance): Promise<void> {
       if (flipped.count === 0) return null;
 
       const { customerId } = await findOrCreateCustomer(tx, normalized, d.customerName ?? null);
-      return tx.vehicleReservation.create({
+      const created = await tx.vehicleReservation.create({
         data: {
           vehicleId: d.vehicleId,
           customerId,
@@ -99,6 +100,12 @@ export async function reservationRoutes(app: FastifyInstance): Promise<void> {
           salesManager: { select: { name: true } },
         },
       });
+      await logAudit(tx, {
+        actorId: user.id, entity: 'VehicleReservation', entityId: created.id, action: 'CREATE',
+        summary: `Reserved ${created.vehicle.vin} (deposit ${d.depositAmount})`,
+        newValue: { vehicleId: d.vehicleId, depositAmount: d.depositAmount, phone: normalized },
+      });
+      return created;
     });
     if (!reservation) return reply.code(409).send({ error: 'VEHICLE_NOT_AVAILABLE' });
     return reply.code(201).send({ reservation: resCard(reservation) });
@@ -117,6 +124,11 @@ export async function reservationRoutes(app: FastifyInstance): Promise<void> {
       await tx.inventoryVehicle.update({
         where: { id: reservation.vehicleId },
         data: { status: 'AVAILABLE', reservedAt: null },
+      });
+      await logAudit(tx, {
+        actorId: user.id, entity: 'VehicleReservation', entityId: id, action: 'DELETE',
+        summary: `Cancelled reservation for ${reservation.vehicle.vin}`,
+        oldValue: { vehicleId: reservation.vehicleId, depositAmount: Number(reservation.depositAmount) },
       });
     });
     return reply.send({ ok: true });

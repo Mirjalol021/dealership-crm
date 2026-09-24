@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../db.js';
 import { requirePermission } from '../auth/guard.js';
+import { logAuditSafe } from '../lib/audit.js';
 
 const createSchema = z.object({
   dealershipName: z.string().min(1),
@@ -59,6 +60,7 @@ export async function dealershipRoutes(app: FastifyInstance): Promise<void> {
         },
         include: { brandLinks: { include: { brand: true } } },
       });
+      await logAuditSafe({ actorId: req.user!.id, entity: 'Dealership', entityId: dealership.id, action: 'CREATE', summary: `Created dealership ${dealership.dealershipName}`, newValue: { dealershipName: dealership.dealershipName, cityRegion: dealership.cityRegion, brandIds } });
       return reply.code(201).send({ dealership });
     },
   );
@@ -87,6 +89,7 @@ export async function dealershipRoutes(app: FastifyInstance): Promise<void> {
           include: { brandLinks: { include: { brand: true } } },
         });
       });
+      await logAuditSafe({ actorId: req.user!.id, entity: 'Dealership', entityId: id, action: 'UPDATE', summary: `Updated dealership ${dealership.dealershipName}`, newValue: { ...data, ...(brandIds ? { brandIds } : {}) } });
       return reply.send({ dealership });
     },
   );

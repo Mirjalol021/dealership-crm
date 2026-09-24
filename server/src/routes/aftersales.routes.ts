@@ -4,6 +4,7 @@ import { prisma } from '../db.js';
 import { requireAuth, requirePermission } from '../auth/guard.js';
 import { can } from '../auth/permissions.js';
 import { scopeWhere, canAccessScope } from '../auth/scope.js';
+import { logAudit, logAuditSafe } from '../lib/audit.js';
 
 // Cost fields are returned ONLY to cost-authorized roles (§46, §73).
 // Service Staff must never receive purchaseCost / costSnapshot in any response.
@@ -133,10 +134,16 @@ export async function afterSalesRoutes(app: FastifyInstance): Promise<void> {
           comment: d.comment ?? null,
         },
       });
-      return tx.afterSalesInventoryItem.update({
+      const updated = await tx.afterSalesInventoryItem.update({
         where: { id },
         data: { quantityOnHand: { increment: d.quantityReceived } },
       });
+      await logAudit(tx, {
+        actorId: user.id, entity: 'AfterSalesStockReceipt', entityId: id, action: 'CREATE',
+        summary: `Received ${d.quantityReceived} x ${item.itemName}`,
+        newValue: { itemId: id, quantityReceived: d.quantityReceived, unitCost: d.unitCost },
+      });
+      return updated;
     });
     if (!result) return reply.code(404).send({ error: 'NOT_FOUND' });
     return reply.code(201).send({ item: itemCard(result, can(user.role, 'costs.view')) });
@@ -171,10 +178,16 @@ export async function afterSalesRoutes(app: FastifyInstance): Promise<void> {
           comment: d.comment ?? null,
         },
       });
-      return tx.afterSalesInventoryItem.update({
+      const updated = await tx.afterSalesInventoryItem.update({
         where: { id },
         data: { quantityOnHand: after },
       });
+      await logAudit(tx, {
+        actorId: user.id, entity: 'AfterSalesStockAdjustment', entityId: id, action: 'UPDATE',
+        summary: `Adjusted ${item.itemName}: ${d.quantityChange} (${d.reason})`,
+        oldValue: { quantityOnHand: before }, newValue: { quantityOnHand: after, reason: d.reason },
+      });
+      return updated;
     });
     if (!result) return reply.code(404).send({ error: 'NOT_FOUND' });
     return reply.code(201).send({ item: itemCard(result, can(user.role, 'costs.view')) });
@@ -340,6 +353,11 @@ export async function afterSalesRoutes(app: FastifyInstance): Promise<void> {
         await tx.afterSalesInventoryItem.update({
           where: { id: line.itemId },
           data: { quantityOnHand: { decrement: line.quantity } },
+        });
+        await logAudit(tx, {
+          actorId: user.id, entity: 'AfterSalesInventoryUsage', entityId: line.itemId, action: 'CREATE',
+          summary: `Used ${line.quantity} x ${item.itemName} on visit ${created.id}`,
+          newValue: { serviceVisitId: created.id, itemId: line.itemId, quantity: line.quantity, soldCarId: d.soldCarId },
         });
       }
 

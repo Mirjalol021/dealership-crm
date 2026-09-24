@@ -24,6 +24,7 @@ const ITEMS: Record<string, NavItem> = {
   management: { path: '/management', labelKey: 'management', capability: 'leads.view.all' },
   importData: { path: '/import', labelKey: 'importData', capability: 'settings.manage' },
   leadForms: { path: '/lead-forms', labelKey: 'leadForms', capability: 'settings.manage' },
+  auditLog: { path: '/audit-log', labelKey: 'auditLog', capability: 'settings.manage' },
 
   // Staff-focused items
   today: { path: '/today', labelKey: 'today' },
@@ -47,7 +48,7 @@ const ITEMS: Record<string, NavItem> = {
 const ROLE_NAV: Record<Role, string[]> = {
   SUPER_ADMIN: [
     'dashboard', 'leads', 'management', 'appointments', 'inventory', 'reservations', 'soldCars', 'sales',
-    'aftersales', 'serviceVisits', 'aftersalesInventory', 'stockMovements', 'finance', 'expenses', 'distributorBonuses', 'financeSettings', 'reports', 'leadForms', 'importData', 'users', 'settings',
+    'aftersales', 'serviceVisits', 'aftersalesInventory', 'stockMovements', 'finance', 'expenses', 'distributorBonuses', 'financeSettings', 'reports', 'leadForms', 'importData', 'users', 'settings', 'auditLog',
   ],
   HEAD_OF_SALES: [
     'dashboard', 'leads', 'management', 'appointments', 'inventory', 'reservations', 'soldCars', 'sales', 'reports',

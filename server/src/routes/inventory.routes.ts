@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../db.js';
 import { requirePermission } from '../auth/guard.js';
 import { scopeWhere, canAccessScope } from '../auth/scope.js';
+import { logAuditSafe } from '../lib/audit.js';
 
 const createSchema = z.object({
   dealershipId: z.string(),
@@ -113,6 +114,11 @@ export async function inventoryRoutes(app: FastifyInstance): Promise<void> {
       },
       include: { brand: true, dealership: true },
     });
+    await logAuditSafe({
+      actorId: user.id, entity: 'InventoryVehicle', entityId: vehicle.id, action: 'CREATE',
+      summary: `Added vehicle ${vehicle.model} (VIN ${vehicle.vin})`,
+      newValue: { vin: vehicle.vin, model: vehicle.model, status: 'AVAILABLE' },
+    });
     return reply.code(201).send({ vehicle: vehicleCard(vehicle) });
   });
 
@@ -129,10 +135,18 @@ export async function inventoryRoutes(app: FastifyInstance): Promise<void> {
     if (rest.status === 'SOLD') statusData.soldAt = new Date();
     if (rest.status === 'AVAILABLE') { statusData.reservedAt = null; statusData.soldAt = null; }
 
+    const user = req.user!;
+    const before = await prisma.inventoryVehicle.findUnique({ where: { id } });
     const vehicle = await prisma.inventoryVehicle.update({
       where: { id },
       data: { ...rest, ...statusData, ...(arrivalDate ? { arrivalDate: new Date(arrivalDate) } : {}) },
       include: { brand: true, dealership: true },
+    });
+    await logAuditSafe({
+      actorId: user.id, entity: 'InventoryVehicle', entityId: id,
+      action: before && before.status !== vehicle.status ? 'STATUS_CHANGE' : 'UPDATE',
+      summary: `Updated vehicle ${vehicle.vin}${before && before.status !== vehicle.status ? ` (${before.status} -> ${vehicle.status})` : ''}`,
+      oldValue: before ? { status: before.status } : null, newValue: parsed.data,
     });
     return reply.send({ vehicle: vehicleCard(vehicle) });
   });

@@ -41,7 +41,8 @@
     "reservations": "Reservations (Zalog)",
     "taxSettings": "Tax Settings",
     "stockMovements": "Stock Movements",
-    "importData": "Import / Export"
+    "importData": "Import / Export",
+    "auditLog": "Audit Log"
   },
   "roles": {
     "SUPER_ADMIN": "Super Admin",
@@ -390,5 +391,22 @@
     "HEAD_OF_SALES": "Head of Sales",
     "SUPER_ADMIN": "Super Admin",
     "REASSIGNMENT": "Reassignment"
+  },
+  "audit": {
+    "title": "Audit Log",
+    "entity": "Entity",
+    "action": "Action",
+    "actor": "User",
+    "time": "Time",
+    "summary": "Summary",
+    "records": "Records",
+    "oldValue": "Old value",
+    "newValue": "New value",
+    "act": {
+      "CREATE": "Created",
+      "UPDATE": "Updated",
+      "DELETE": "Deleted",
+      "STATUS_CHANGE": "Status changed"
+    }
   }
 }

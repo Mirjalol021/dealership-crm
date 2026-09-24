@@ -298,3 +298,8 @@ legend { font-size: 12px; color: var(--muted); padding: 0 4px; }
 .report-body { margin-top: 6px; }
 .export-bar { display: flex; align-items: center; gap: 10px; margin-top: 18px; }
 .export-bar button { width: auto; }
+
+/* Audit log detail (§75) */
+.audit-detail { display: flex; gap: 24px; padding: 12px 16px; background: #f8f9fb; border-radius: 8px; }
+.audit-detail > div { flex: 1; }
+.audit-detail pre { background: #fff; border: 1px solid #e2e5ea; border-radius: 6px; padding: 8px; font-size: 12px; overflow-x: auto; margin-top: 4px; }

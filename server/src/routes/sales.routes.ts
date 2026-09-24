@@ -6,6 +6,7 @@ import { can } from '../auth/permissions.js';
 import { normalizePhone } from '../lib/phone.js';
 import { findOrCreateCustomer } from '../lib/leadService.js';
 import { scopeWhere, canAccessScope } from '../auth/scope.js';
+import { logAudit, logAuditSafe } from '../lib/audit.js';
 
 const saleSchema = z.object({
   // Either link an inventory vehicle, or enter a VIN directly (historical/imported).
@@ -150,9 +151,13 @@ export async function salesRoutes(app: FastifyInstance): Promise<void> {
         });
         if (claimed.count === 0) throw new Error('VEHICLE_ALREADY_SOLD');
         await tx.vehicleReservation.deleteMany({ where: { vehicleId: d.vehicleId } });
+        await logAudit(tx, {
+          actorId: user.id, entity: 'InventoryVehicle', entityId: d.vehicleId, action: 'STATUS_CHANGE',
+          summary: `Vehicle marked SOLD (${d.vin})`, oldValue: { status: 'RESERVED_OR_AVAILABLE' }, newValue: { status: 'SOLD' },
+        });
       }
 
-      return tx.soldCar.create({
+      const created = await tx.soldCar.create({
         data: {
           saleDate: d.saleDate ? new Date(d.saleDate) : new Date(),
           dealershipId: d.dealershipId,
@@ -176,6 +181,19 @@ export async function salesRoutes(app: FastifyInstance): Promise<void> {
           salesManager: { select: { name: true } },
         },
       });
+      await logAudit(tx, {
+        actorId: user.id,
+        entity: 'SoldCar',
+        entityId: created.id,
+        action: 'CREATE',
+        summary: `Sold ${created.model} (VIN ${created.vin})`,
+        newValue: {
+          model: created.model, vin: created.vin, salePrice: Number(created.salePrice),
+          manualMargin: Number(created.manualMargin), paymentType: created.paymentType,
+          discountedSale: created.discountedSale,
+        },
+      });
+      return created;
     });
 
     return reply.code(201).send({ sale: saleCard(sale, true) });
@@ -195,6 +213,7 @@ export async function salesRoutes(app: FastifyInstance): Promise<void> {
     const parsed = schema.safeParse(req.body);
     if (!parsed.success) return reply.code(400).send({ error: 'INVALID_INPUT' });
 
+    const before = await prisma.soldCar.findUnique({ where: { id } });
     const sale = await prisma.soldCar.update({
       where: { id },
       data: parsed.data,
@@ -202,6 +221,15 @@ export async function salesRoutes(app: FastifyInstance): Promise<void> {
         customer: true, brand: true, dealership: true,
         salesManager: { select: { name: true } },
       },
+    });
+    await logAuditSafe({
+      actorId: req.user!.id,
+      entity: 'SoldCar',
+      entityId: id,
+      action: 'UPDATE',
+      summary: `Updated sale ${sale.vin}`,
+      oldValue: before ? { manualMargin: Number(before.manualMargin), discountedSale: before.discountedSale, discountAmount: before.discountAmount != null ? Number(before.discountAmount) : null, paymentType: before.paymentType } : null,
+      newValue: parsed.data,
     });
     return reply.send({ sale: saleCard(sale, true) });
   });
@@ -230,12 +258,23 @@ export async function salesRoutes(app: FastifyInstance): Promise<void> {
         comment: d.comment ?? null,
       },
     });
+    await logAuditSafe({
+      actorId: req.user!.id, entity: 'VehicleCustomerBonus', entityId: bonus.id, action: 'CREATE',
+      summary: `Customer bonus ${d.bonusType} ${d.amount}`,
+      newValue: { soldCarId: id, bonusType: d.bonusType, amount: d.amount, paidFrom: d.paidFrom },
+    });
     return reply.code(201).send({ bonus: { ...bonus, amount: Number(bonus.amount) } });
   });
 
   app.delete('/api/sales/:id/bonuses/:bonusId', { preHandler: [requirePermission('costs.view')] }, async (req, reply) => {
     const { bonusId } = req.params as { id: string; bonusId: string };
+    const before = await prisma.vehicleCustomerBonus.findUnique({ where: { id: bonusId } });
     await prisma.vehicleCustomerBonus.delete({ where: { id: bonusId } });
+    await logAuditSafe({
+      actorId: req.user!.id, entity: 'VehicleCustomerBonus', entityId: bonusId, action: 'DELETE',
+      summary: before ? `Deleted customer bonus ${before.bonusType}` : 'Deleted customer bonus',
+      oldValue: before ? { bonusType: before.bonusType, amount: Number(before.amount), paidFrom: before.paidFrom } : null,
+    });
     return reply.send({ ok: true });
   });
 
@@ -265,6 +304,11 @@ export async function salesRoutes(app: FastifyInstance): Promise<void> {
         comment: d.comment ?? null,
       },
     });
+    await logAuditSafe({
+      actorId: req.user!.id, entity: 'VinDistributorBonus', entityId: bonus.id, action: 'CREATE',
+      summary: `VIN bonus ${d.amount} (${d.status ?? 'EXPECTED'})`,
+      newValue: { soldCarId: id, amount: d.amount, accountingMonth: d.accountingMonth, status: d.status ?? 'EXPECTED' },
+    });
     return reply.code(201).send({ bonus: { ...bonus, amount: Number(bonus.amount) } });
   });
 
@@ -281,12 +325,20 @@ export async function salesRoutes(app: FastifyInstance): Promise<void> {
     const parsed = schema.safeParse(req.body);
     if (!parsed.success) return reply.code(400).send({ error: 'INVALID_INPUT' });
     const d = parsed.data;
+    const before = await prisma.vinDistributorBonus.findUnique({ where: { id: bonusId } });
     const bonus = await prisma.vinDistributorBonus.update({
       where: { id: bonusId },
       data: {
         ...d,
         ...(d.receivedDate !== undefined ? { receivedDate: d.receivedDate ? new Date(d.receivedDate) : null } : {}),
       },
+    });
+    await logAuditSafe({
+      actorId: req.user!.id, entity: 'VinDistributorBonus', entityId: bonusId,
+      action: before && before.status !== bonus.status ? 'STATUS_CHANGE' : 'UPDATE',
+      summary: `VIN bonus ${before?.status ?? ''} -> ${bonus.status}`,
+      oldValue: before ? { amount: Number(before.amount), status: before.status } : null,
+      newValue: { amount: Number(bonus.amount), status: bonus.status },
     });
     return reply.send({ bonus: { ...bonus, amount: Number(bonus.amount) } });
   });
