@@ -19,6 +19,34 @@ function monthRange(month: string): { gte: Date; lt: Date } {
   return { gte: new Date(y, m - 1, 1), lt: new Date(y, m, 1) };
 }
 
+// Resolves the reporting window. Priority: explicit from/to (§53 custom date range),
+// otherwise the single `month`. Returns the range plus the "tag" used for month-based
+// records (KPI bonuses) — for a custom range we don't have a single month key.
+function resolveRange(q: Record<string, string | undefined>): {
+  gte: Date; lt: Date; month: string | null; isCustom: boolean;
+} {
+  if (q.from || q.to) {
+    const gte = q.from ? new Date(q.from) : new Date(2000, 0, 1);
+    const lt = q.to ? new Date(`${q.to}T23:59:59.999Z`) : new Date();
+    return { gte, lt, month: null, isCustom: true };
+  }
+  const month = q.month ?? monthKey(new Date());
+  const { gte, lt } = monthRange(month);
+  return { gte, lt, month, isCustom: false };
+}
+
+// All "YYYY-MM" keys that a date range touches (for accountingMonth filtering).
+function monthKeysInRange(gte: Date, lt: Date): string[] {
+  const keys: string[] = [];
+  const cur = new Date(gte.getFullYear(), gte.getMonth(), 1);
+  const end = new Date(lt.getFullYear(), lt.getMonth(), 1);
+  while (cur <= end) {
+    keys.push(monthKey(cur));
+    cur.setMonth(cur.getMonth() + 1);
+  }
+  return keys;
+}
+
 export async function financeRoutes(app: FastifyInstance): Promise<void> {
   // ---------- Tax settings (§40) ----------
   app.get('/api/finance/settings', { preHandler: [requirePermission('finance.view')] }, async (_req, reply) => {
@@ -208,8 +236,7 @@ export async function financeRoutes(app: FastifyInstance): Promise<void> {
   app.get('/api/finance/dashboard', { preHandler: [requirePermission('finance.view')] }, async (req, reply) => {
     const q = req.query as Record<string, string | undefined>;
     const view = q.view === 'cash' ? 'cash' : 'profit';
-    const month = q.month ?? monthKey(new Date());
-    const { gte, lt } = monthRange(month);
+    const { gte, lt, month, isCustom } = resolveRange(q);
     const tax = await taxSettings();
 
     const brandFilter = q.brandId ? { brandId: q.brandId } : {};
@@ -252,9 +279,17 @@ export async function financeRoutes(app: FastifyInstance): Promise<void> {
       vinBonusExpected += expectedVin;
     }
 
-    // KPI bonuses for the month (§34). Confirmed/Paid count; Expected shown separately.
+    // KPI bonuses (§34). For a single month we match the month key. For a custom
+    // range we include the accounting-month keys that fall inside the range (so a
+    // bonus belonging to an in-range month is counted even before it is received).
     const kpiBonuses = await prisma.kpiBonus.findMany({
-      where: { month, ...brandFilter, ...(q.dealershipId ? { dealershipId: q.dealershipId } : {}) },
+      where: {
+        ...(isCustom
+          ? { month: { in: monthKeysInRange(gte, lt) } }
+          : { month: month ?? undefined }),
+        ...brandFilter,
+        ...(q.dealershipId ? { dealershipId: q.dealershipId } : {}),
+      },
     });
     const kpiConfirmed = kpiBonuses
       .filter((b) => b.status === 'CONFIRMED' || b.status === 'PAID')
@@ -263,12 +298,22 @@ export async function financeRoutes(app: FastifyInstance): Promise<void> {
       .filter((b) => b.status === 'EXPECTED')
       .reduce((s, b) => s + Number(b.amount), 0);
 
-    // Expenses (§38): Profit View uses accountingMonth; Cash Flow uses paymentDate.
-    const expenses = await prisma.expense.findMany({
-      where: view === 'profit'
-        ? { accountingMonth: month, ...(q.brandId ? { brandId: q.brandId } : {}), ...(q.dealershipId ? { dealershipId: q.dealershipId } : {}) }
-        : { paymentDate: { gte, lt }, status: 'PAID', ...(q.brandId ? { brandId: q.brandId } : {}), ...(q.dealershipId ? { dealershipId: q.dealershipId } : {}) },
-    });
+    // Expenses (§38): Profit View uses accountingMonth (for a single month) or, for a
+    // custom range, the accounting month keys that fall inside the range. Cash Flow
+    // always uses the actual paymentDate.
+    const expenseBrandDealership = {
+      ...(q.brandId ? { brandId: q.brandId } : {}),
+      ...(q.dealershipId ? { dealershipId: q.dealershipId } : {}),
+    };
+    let expenseWhere: Record<string, unknown>;
+    if (view === 'cash') {
+      expenseWhere = { paymentDate: { gte, lt }, status: 'PAID', ...expenseBrandDealership };
+    } else if (isCustom) {
+      expenseWhere = { accountingMonth: { in: monthKeysInRange(gte, lt) }, ...expenseBrandDealership };
+    } else {
+      expenseWhere = { accountingMonth: month, ...expenseBrandDealership };
+    }
+    const expenses = await prisma.expense.findMany({ where: expenseWhere });
     const fixedExpenses = expenses.filter((e) => e.expenseType === 'FIXED').reduce((s, e) => s + Number(e.amount), 0);
     const variableExpenses = expenses.filter((e) => e.expenseType === 'VARIABLE').reduce((s, e) => s + Number(e.amount), 0);
     const totalExpenses = fixedExpenses + variableExpenses;
@@ -299,9 +344,12 @@ export async function financeRoutes(app: FastifyInstance): Promise<void> {
     return reply.send({
       view,
       month,
+      range: { from: gte, to: lt, month, isCustom },
       cards: {
         totalTurnover: round2(totalTurnover),
         vehicleMargin: round2(vehicleMargin),
+        marginBeforeVat: round2(vehicleMargin),
+        marginAfterVat: round2(vehicleMargin - vatTotal),
         serviceRevenue,
         serviceContribution: round2(serviceContributionTotal),
         vinBonuses: round2(vinBonusConfirmed),
@@ -316,6 +364,51 @@ export async function financeRoutes(app: FastifyInstance): Promise<void> {
         netResult: net,
       },
     });
+  });
+
+  // ---------- Finance Chart (§54): Revenue vs Expenses by Month ----------
+  // Returns the last N months (default 6) of turnover / margin / expenses / net,
+  // respecting the active Profit-or-Cash view and brand/dealership filters.
+  app.get('/api/finance/monthly-trend', { preHandler: [requirePermission('finance.view')] }, async (req, reply) => {
+    const q = req.query as Record<string, string | undefined>;
+    const view = q.view === 'cash' ? 'cash' : 'profit';
+    const monthsBack = Math.min(Math.max(Number(q.months ?? 6), 2), 24);
+    const now = new Date();
+    const brandFilter = q.brandId ? { brandId: q.brandId } : {};
+    const dealershipFilter = q.dealershipId ? { dealershipId: q.dealershipId } : {};
+    const scope = scopeWhere(req.user!);
+
+    const points: { month: string; turnover: number; margin: number; expenses: number; net: number }[] = [];
+
+    for (let i = monthsBack - 1; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = monthKey(d);
+      const { gte, lt } = monthRange(key);
+
+      const soldCars = await prisma.soldCar.findMany({
+        where: { saleDate: { gte, lt }, ...brandFilter, ...dealershipFilter, ...scope },
+        include: { customerBonuses: true, vinBonuses: true },
+      });
+      const turnover = soldCars.reduce((s, c) => s + Number(c.salePrice), 0);
+      const margin = soldCars.reduce((s, c) => s + Number(c.manualMargin), 0);
+
+      const expenses = await prisma.expense.findMany({
+        where: view === 'profit'
+          ? { accountingMonth: key, ...brandFilter, ...dealershipFilter, ...scope }
+          : { paymentDate: { gte, lt }, status: 'PAID', ...brandFilter, ...dealershipFilter, ...scope },
+      });
+      const totalExpenses = expenses.reduce((s, e) => s + Number(e.amount), 0);
+
+      points.push({
+        month: key,
+        turnover: round2(turnover),
+        margin: round2(margin),
+        expenses: round2(totalExpenses),
+        net: round2(margin - totalExpenses),
+      });
+    }
+
+    return reply.send({ view, months: monthsBack, points });
   });
 }
 

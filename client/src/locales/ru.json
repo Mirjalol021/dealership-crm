@@ -259,7 +259,16 @@
     "addKpi": "Добавить KPI бонус",
     "month": "Месяц",
     "expectedBonus": "Ожидаемый бонус",
-    "contribution": "Вклад"
+    "contribution": "Вклад",
+    "marginBeforeVat": "Маржа до НДС",
+    "marginAfterVat": "Маржа после НДС",
+    "customRange": "Произвольный период",
+    "byMonth": "По месяцам",
+    "from": "С",
+    "to": "По",
+    "revenueVsExpenses": "Выручка и расходы по месяцам",
+    "revenue": "Выручка",
+    "months": "мес."
   },
   "as": {
     "inventory": "Склад AfterSales",

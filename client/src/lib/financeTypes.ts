@@ -30,7 +30,10 @@ export interface KpiBonus {
 export interface DashboardCards {
   totalTurnover: number;
   vehicleMargin: number;
+  marginBeforeVat: number;
+  marginAfterVat: number;
   serviceRevenue: number;
+  serviceContribution: number;
   vinBonuses: number;
   vinBonusesExpected: number;
   kpiBonuses: number;
@@ -41,6 +44,14 @@ export interface DashboardCards {
   fixedExpenses: number;
   variableExpenses: number;
   netResult: number;
+}
+
+export interface MonthlyTrendPoint {
+  month: string;
+  turnover: number;
+  margin: number;
+  expenses: number;
+  net: number;
 }
 
 export interface FinanceSettings {

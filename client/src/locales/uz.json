@@ -259,7 +259,16 @@
     "addKpi": "KPI bonus qo'shish",
     "month": "Oy",
     "expectedBonus": "Kutilayotgan bonus",
-    "contribution": "Hissa"
+    "contribution": "Hissa",
+    "marginBeforeVat": "QQSgacha marja",
+    "marginAfterVat": "QQSdan keyin marja",
+    "customRange": "Sana oralig'i",
+    "byMonth": "Oylar bo'yicha",
+    "from": "Dan",
+    "to": "Gacha",
+    "revenueVsExpenses": "Oylar bo'yicha tushum va xarajatlar",
+    "revenue": "Tushum",
+    "months": "oy"
   },
   "as": {
     "inventory": "AfterSales ombori",

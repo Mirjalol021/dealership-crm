@@ -259,7 +259,16 @@
     "addKpi": "Add KPI Bonus",
     "month": "Month",
     "expectedBonus": "Expected bonus",
-    "contribution": "Contribution"
+    "contribution": "Contribution",
+    "marginBeforeVat": "Margin Before VAT",
+    "marginAfterVat": "Margin After VAT",
+    "customRange": "Custom Range",
+    "byMonth": "By Month",
+    "from": "From",
+    "to": "To",
+    "revenueVsExpenses": "Revenue vs Expenses by Month",
+    "revenue": "Revenue",
+    "months": "months"
   },
   "as": {
     "inventory": "AfterSales Inventory",
