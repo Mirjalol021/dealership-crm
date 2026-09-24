@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../db.js';
-import { requireAuth, requirePermission } from '../auth/guard.js';
+import { requirePermission } from '../auth/guard.js';
 import { normalizePhone } from '../lib/phone.js';
 import { findOrCreateCustomer } from '../lib/leadService.js';
 
@@ -42,7 +42,7 @@ function resCard(r: {
 
 export async function reservationRoutes(app: FastifyInstance): Promise<void> {
   // List reservations (§28).
-  app.get('/api/reservations', { preHandler: [requireAuth] }, async (_req, reply) => {
+  app.get('/api/reservations', { preHandler: [requirePermission('sales.view')] }, async (_req, reply) => {
     const reservations = await prisma.vehicleReservation.findMany({
       include: {
         customer: true,

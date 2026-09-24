@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../db.js';
-import { requireAuth, requirePermission } from '../auth/guard.js';
+import { requireAuth, requirePermission, requireAnyPermission } from '../auth/guard.js';
 import { normalizePhone } from '../lib/phone.js';
 import { findOrCreateCustomer, logActivity, logAssignment, nextAttemptNo } from '../lib/leadService.js';
 import type { AuthUser } from '../auth/session.js';
@@ -112,7 +112,7 @@ export async function leadRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // --- My Leads / list with quick filters (§17) ---
-  app.get('/api/leads', { preHandler: [requireAuth] }, async (req, reply) => {
+  app.get('/api/leads', { preHandler: [requireAnyPermission(['leads.view.all', 'leads.view.own'])] }, async (req, reply) => {
     const user = req.user!;
     const q = req.query as Record<string, string | undefined>;
 
@@ -162,7 +162,7 @@ export async function leadRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // --- Today / Lead Processing (§16) ---
-  app.get('/api/leads/today', { preHandler: [requireAuth] }, async (req, reply) => {
+  app.get('/api/leads/today', { preHandler: [requireAnyPermission(['leads.view.all', 'leads.view.own'])] }, async (req, reply) => {
     const user = req.user!;
     const base = user.role === 'SALES_MANAGER' ? { assignedUserId: user.id } : {};
     const now = new Date();

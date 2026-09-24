@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../db.js';
-import { requireAuth, requirePermission } from '../auth/guard.js';
+import { requirePermission } from '../auth/guard.js';
 
 const createSchema = z.object({
   dealershipId: z.string(),
@@ -51,7 +51,7 @@ function vehicleCard(v: {
 
 export async function inventoryRoutes(app: FastifyInstance): Promise<void> {
   // List inventory with filters (§27).
-  app.get('/api/inventory', { preHandler: [requireAuth] }, async (req, reply) => {
+  app.get('/api/inventory', { preHandler: [requirePermission('inventory.view')] }, async (req, reply) => {
     const q = req.query as Record<string, string | undefined>;
     const where: Record<string, unknown> = {};
     if (q.status) where.status = q.status;
@@ -70,7 +70,7 @@ export async function inventoryRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // Inventory summary counts (§27, §69).
-  app.get('/api/inventory/summary', { preHandler: [requireAuth] }, async (_req, reply) => {
+  app.get('/api/inventory/summary', { preHandler: [requirePermission('inventory.view')] }, async (_req, reply) => {
     const grouped = await prisma.inventoryVehicle.groupBy({
       by: ['status'],
       _count: { _all: true },
@@ -123,7 +123,7 @@ export async function inventoryRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // Single vehicle detail.
-  app.get('/api/inventory/:id', { preHandler: [requireAuth] }, async (req, reply) => {
+  app.get('/api/inventory/:id', { preHandler: [requirePermission('inventory.view')] }, async (req, reply) => {
     const { id } = req.params as { id: string };
     const vehicle = await prisma.inventoryVehicle.findUnique({
       where: { id },

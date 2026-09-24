@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../db.js';
-import { requireAuth, requirePermission } from '../auth/guard.js';
+import { requirePermission } from '../auth/guard.js';
 
 // Ensures the singleton settings row exists.
 async function getSettings() {
@@ -15,8 +15,8 @@ async function getSettings() {
 }
 
 export async function settingsRoutes(app: FastifyInstance): Promise<void> {
-  // Any authenticated user may read app settings (needed by staff UI).
-  app.get('/api/settings', { preHandler: [requireAuth] }, async (_req, reply) => {
+  // Only Super Admin may read app settings (contains distribution mode, §6).
+  app.get('/api/settings', { preHandler: [requirePermission('settings.manage')] }, async (_req, reply) => {
     const s = await getSettings();
     return reply.send({
       settings: { leadDistributionMode: s.leadDistributionMode },

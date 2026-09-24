@@ -28,3 +28,12 @@ export function requirePermission(cap: Capability) {
     if (!can(req.user.role, cap)) return reply.code(403).send({ error: 'FORBIDDEN' });
   };
 }
+
+// Blocks unless the role has ANY of the given capabilities.
+export function requireAnyPermission(caps: Capability[]) {
+  return async function (req: FastifyRequest, reply: FastifyReply): Promise<void> {
+    const user = req.user;
+    if (!user) return reply.code(401).send({ error: 'UNAUTHENTICATED' });
+    if (!caps.some((c) => can(user.role, c))) return reply.code(403).send({ error: 'FORBIDDEN' });
+  };
+}
