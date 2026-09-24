@@ -2,12 +2,13 @@ import type { AuthUser } from './session.js';
 
 // Data-scoping helpers (§5, §73).
 //
-// A user is "unrestricted" when they have NO dealership/brand access rows at all
-// (e.g. the Super Admin, who is provisioned without explicit scopes). Otherwise
-// they may only touch records belonging to the dealerships/brands they were
-// granted. This is enforced on the BACKEND — hiding UI is not enough.
+// The Super Admin is ALWAYS unrestricted. For other roles, a user is
+// "unrestricted" when they have NO dealership/brand access rows at all.
+// Otherwise they may only touch records belonging to the dealerships/brands
+// they were granted. This is enforced on the BACKEND — hiding UI is not enough.
 
 export function isUnrestricted(user: AuthUser): boolean {
+  if (user.role === 'SUPER_ADMIN') return true;
   return user.dealershipIds.length === 0 && user.brandIds.length === 0;
 }
 

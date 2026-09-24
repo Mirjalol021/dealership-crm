@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { api } from '../api/client';
+import { api, setUnauthorizedHandler } from '../api/client';
 import type { AuthUser, Language } from './types';
 
 interface AuthContextValue {
@@ -22,6 +22,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then((r) => setUser(r.user))
       .catch(() => setUser(null))
       .finally(() => setLoading(false));
+  }, []);
+
+  // When any API call returns 401, drop the user so ProtectedRoute redirects to /login.
+  useEffect(() => {
+    setUnauthorizedHandler(() => setUser(null));
+    return () => setUnauthorizedHandler(null);
   }, []);
 
   async function login(email: string, password: string) {

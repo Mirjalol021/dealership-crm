@@ -10,6 +10,12 @@ export class ApiError extends Error {
   }
 }
 
+// Called when the session is no longer valid (401), so the app can redirect to login.
+let onUnauthorized: (() => void) | null = null;
+export function setUnauthorizedHandler(fn: (() => void) | null) {
+  onUnauthorized = fn;
+}
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const res = await fetch(path, {
     method,
@@ -21,9 +27,18 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   if (res.status === 204) return undefined as T;
 
   const text = await res.text();
-  const data = text ? JSON.parse(text) : {};
+  let data: { error?: string } = {};
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    data = {};
+  }
 
   if (!res.ok) {
+    // Session expired / not authenticated — let the app react (redirect to login).
+    if (res.status === 401 && !path.startsWith('/api/auth/')) {
+      onUnauthorized?.();
+    }
     throw new ApiError(res.status, data?.error ?? 'REQUEST_FAILED');
   }
   return data as T;
