@@ -2,10 +2,13 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
 import type { Brand, Dealership } from '../lib/types';
+import { AuditLogPage } from './AuditLogPage';
+
+type Tab = 'general' | 'dealerships' | 'brands' | 'audit';
 
 export function SettingsPage() {
   const { t } = useTranslation();
-  const [tab, setTab] = useState<'general' | 'dealerships' | 'brands'>('general');
+  const [tab, setTab] = useState<Tab>('general');
   const [brands, setBrands] = useState<Brand[]>([]);
   const [dealerships, setDealerships] = useState<Dealership[]>([]);
   const [error, setError] = useState('');
@@ -27,28 +30,28 @@ export function SettingsPage() {
     load();
   }, []);
 
+  const TABS: { key: Tab; label: string }[] = [
+    { key: 'general', label: t('settings.leadDistribution') },
+    { key: 'dealerships', label: t('settings.dealerships') },
+    { key: 'brands', label: t('settings.brands') },
+    { key: 'audit', label: t('audit.title') },
+  ];
+
   return (
     <div>
       <h1 className="page-title">{t('settings.title')}</h1>
       <div className="tabs">
-        <button className={tab === 'general' ? 'active' : ''} onClick={() => setTab('general')}>
-          {t('settings.leadDistribution')}
-        </button>
-        <button className={tab === 'dealerships' ? 'active' : ''} onClick={() => setTab('dealerships')}>
-          {t('settings.dealerships')}
-        </button>
-        <button className={tab === 'brands' ? 'active' : ''} onClick={() => setTab('brands')}>
-          {t('settings.brands')}
-        </button>
+        {TABS.map((x) => (
+          <button key={x.key} className={tab === x.key ? 'active' : ''} onClick={() => setTab(x.key)}>
+            {x.label}
+          </button>
+        ))}
       </div>
       {error && <div className="error">{error}</div>}
-      {tab === 'general' ? (
-        <GeneralTab />
-      ) : tab === 'dealerships' ? (
-        <DealershipsTab dealerships={dealerships} brands={brands} onChanged={load} />
-      ) : (
-        <BrandsTab brands={brands} onChanged={load} />
-      )}
+      {tab === 'general' && <GeneralTab />}
+      {tab === 'dealerships' && <DealershipsTab dealerships={dealerships} brands={brands} onChanged={load} />}
+      {tab === 'brands' && <BrandsTab brands={brands} onChanged={load} />}
+      {tab === 'audit' && <AuditLogPage />}
     </div>
   );
 }
@@ -80,44 +83,51 @@ function GeneralTab() {
     <div className="card" style={{ maxWidth: 560 }}>
       <h2>{t('settings.leadDistribution')}</h2>
       <label className="check">
-        <input
-          type="radio"
-          name="distmode"
-          checked={mode === 'MANAGER_SELF_PICK'}
-          disabled={busy}
-          onChange={() => change('MANAGER_SELF_PICK')}
-        />
+        <input type="radio" name="distmode" checked={mode === 'MANAGER_SELF_PICK'} disabled={busy} onChange={() => change('MANAGER_SELF_PICK')} />
         {t('settings.managerSelfPick')}
       </label>
       <label className="check">
-        <input
-          type="radio"
-          name="distmode"
-          checked={mode === 'CALL_CENTER_QUALIFICATION'}
-          disabled={busy}
-          onChange={() => change('CALL_CENTER_QUALIFICATION')}
-        />
+        <input type="radio" name="distmode" checked={mode === 'CALL_CENTER_QUALIFICATION'} disabled={busy} onChange={() => change('CALL_CENTER_QUALIFICATION')} />
         {t('settings.callCenter')}
       </label>
       <p className="muted small">{t('settings.distributionHint')}</p>
-      {saved && <div className="ok-msg">✓ {t('settings.save')}</div>}
+      {saved && <div className="ok-msg">✓ {t('common.saved')}</div>}
     </div>
   );
 }
 
 function BrandsTab({ brands, onChanged }: { brands: Brand[]; onChanged: () => void }) {
   const { t } = useTranslation();
-  const [name, setName] = useState('');
-  const [code, setCode] = useState('');
+  const [editId, setEditId] = useState<string | null>(null);
+  const [draft, setDraft] = useState<{ name: string; code: string; active: boolean }>({ name: '', code: '', active: true });
+  const [newName, setNewName] = useState('');
+  const [newCode, setNewCode] = useState('');
   const [busy, setBusy] = useState(false);
+
+  function startEdit(b: Brand) {
+    setEditId(b.id);
+    setDraft({ name: b.name, code: b.code, active: b.active });
+  }
+
+  async function saveEdit() {
+    if (!editId) return;
+    setBusy(true);
+    try {
+      await api.patch(`/api/brands/${editId}`, draft);
+      setEditId(null);
+      onChanged();
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function add(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
     try {
-      await api.post('/api/brands', { name, code });
-      setName('');
-      setCode('');
+      await api.post('/api/brands', { name: newName, code: newCode });
+      setNewName('');
+      setNewCode('');
       onChanged();
     } finally {
       setBusy(false);
@@ -134,14 +144,30 @@ function BrandsTab({ brands, onChanged }: { brands: Brand[]; onChanged: () => vo
               <th>{t('settings.name')}</th>
               <th>{t('settings.code')}</th>
               <th>{t('settings.active')}</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
             {brands.map((b) => (
               <tr key={b.id}>
-                <td>{b.name}</td>
-                <td>{b.code}</td>
-                <td>{b.active ? '✓' : '—'}</td>
+                {editId === b.id ? (
+                  <>
+                    <td><input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} /></td>
+                    <td><input value={draft.code} onChange={(e) => setDraft({ ...draft, code: e.target.value })} /></td>
+                    <td><input type="checkbox" checked={draft.active} onChange={(e) => setDraft({ ...draft, active: e.target.checked })} /></td>
+                    <td className="actions-cell">
+                      <button className="btn-primary sm" disabled={busy} onClick={saveEdit}>{t('common.save')}</button>
+                      <button className="btn-ghost sm" onClick={() => setEditId(null)}>{t('common.cancel')}</button>
+                    </td>
+                  </>
+                ) : (
+                  <>
+                    <td>{b.name}</td>
+                    <td>{b.code}</td>
+                    <td>{b.active ? '✓' : '—'}</td>
+                    <td className="actions-cell"><button className="btn-ghost sm" onClick={() => startEdit(b)}>{t('common.edit')}</button></td>
+                  </>
+                )}
               </tr>
             ))}
           </tbody>
@@ -149,17 +175,9 @@ function BrandsTab({ brands, onChanged }: { brands: Brand[]; onChanged: () => vo
       </div>
       <form className="card" onSubmit={add}>
         <h2>{t('settings.addBrand')}</h2>
-        <label>
-          {t('settings.name')}
-          <input value={name} onChange={(e) => setName(e.target.value)} required />
-        </label>
-        <label>
-          {t('settings.code')}
-          <input value={code} onChange={(e) => setCode(e.target.value)} required />
-        </label>
-        <button className="btn-primary" disabled={busy}>
-          {t('settings.save')}
-        </button>
+        <label>{t('settings.name')}<input value={newName} onChange={(e) => setNewName(e.target.value)} required /></label>
+        <label>{t('settings.code')}<input value={newCode} onChange={(e) => setNewCode(e.target.value)} required /></label>
+        <button className="btn-primary" disabled={busy}>{t('settings.save')}</button>
       </form>
     </div>
   );
@@ -175,12 +193,42 @@ function DealershipsTab({
   onChanged: () => void;
 }) {
   const { t } = useTranslation();
+  const [editId, setEditId] = useState<string | null>(null);
+  const [draft, setDraft] = useState<{ dealershipName: string; cityRegion: string; address: string; active: boolean; brandIds: string[] }>({
+    dealershipName: '', cityRegion: '', address: '', active: true, brandIds: [],
+  });
   const [name, setName] = useState('');
   const [city, setCity] = useState('');
   const [address, setAddress] = useState('');
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
 
+  function startEdit(d: Dealership) {
+    setEditId(d.id);
+    setDraft({
+      dealershipName: d.dealershipName, cityRegion: d.cityRegion, address: d.address ?? '', active: d.active,
+      brandIds: (d.brands ?? []).map((b) => b.id),
+    });
+  }
+
+  async function saveEdit() {
+    if (!editId) return;
+    setBusy(true);
+    try {
+      await api.patch(`/api/dealerships/${editId}`, {
+        dealershipName: draft.dealershipName, cityRegion: draft.cityRegion,
+        address: draft.address || null, active: draft.active, brandIds: draft.brandIds,
+      });
+      setEditId(null);
+      onChanged();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function toggleDraftBrand(id: string) {
+    setDraft((d) => ({ ...d, brandIds: d.brandIds.includes(id) ? d.brandIds.filter((x) => x !== id) : [...d.brandIds, id] }));
+  }
   function toggleBrand(id: string) {
     setSelectedBrands((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
@@ -189,16 +237,8 @@ function DealershipsTab({
     e.preventDefault();
     setBusy(true);
     try {
-      await api.post('/api/dealerships', {
-        dealershipName: name,
-        cityRegion: city,
-        address: address || null,
-        brandIds: selectedBrands,
-      });
-      setName('');
-      setCity('');
-      setAddress('');
-      setSelectedBrands([]);
+      await api.post('/api/dealerships', { dealershipName: name, cityRegion: city, address: address || null, brandIds: selectedBrands });
+      setName(''); setCity(''); setAddress(''); setSelectedBrands([]);
       onChanged();
     } finally {
       setBusy(false);
@@ -216,15 +256,41 @@ function DealershipsTab({
               <th>{t('settings.cityRegion')}</th>
               <th>{t('settings.brandsAvailable')}</th>
               <th>{t('settings.active')}</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
             {dealerships.map((d) => (
               <tr key={d.id}>
-                <td>{d.dealershipName}</td>
-                <td>{d.cityRegion}</td>
-                <td>{d.brands?.map((b) => b.name).join(', ') || t('common.none')}</td>
-                <td>{d.active ? '✓' : '—'}</td>
+                {editId === d.id ? (
+                  <>
+                    <td><input value={draft.dealershipName} onChange={(e) => setDraft({ ...draft, dealershipName: e.target.value })} /></td>
+                    <td><input value={draft.cityRegion} onChange={(e) => setDraft({ ...draft, cityRegion: e.target.value })} /></td>
+                    <td>
+                      <div className="brand-checks">
+                        {brands.map((b) => (
+                          <label key={b.id} className="check small">
+                            <input type="checkbox" checked={draft.brandIds.includes(b.id)} onChange={() => toggleDraftBrand(b.id)} />
+                            {b.name}
+                          </label>
+                        ))}
+                      </div>
+                    </td>
+                    <td><input type="checkbox" checked={draft.active} onChange={(e) => setDraft({ ...draft, active: e.target.checked })} /></td>
+                    <td className="actions-cell">
+                      <button className="btn-primary sm" disabled={busy} onClick={saveEdit}>{t('common.save')}</button>
+                      <button className="btn-ghost sm" onClick={() => setEditId(null)}>{t('common.cancel')}</button>
+                    </td>
+                  </>
+                ) : (
+                  <>
+                    <td>{d.dealershipName}</td>
+                    <td>{d.cityRegion}</td>
+                    <td>{d.brands?.map((b) => b.name).join(', ') || t('common.none')}</td>
+                    <td>{d.active ? '✓' : '—'}</td>
+                    <td className="actions-cell"><button className="btn-ghost sm" onClick={() => startEdit(d)}>{t('common.edit')}</button></td>
+                  </>
+                )}
               </tr>
             ))}
           </tbody>
@@ -232,34 +298,19 @@ function DealershipsTab({
       </div>
       <form className="card" onSubmit={add}>
         <h2>{t('settings.addDealership')}</h2>
-        <label>
-          {t('settings.name')}
-          <input value={name} onChange={(e) => setName(e.target.value)} required />
-        </label>
-        <label>
-          {t('settings.cityRegion')}
-          <input value={city} onChange={(e) => setCity(e.target.value)} required />
-        </label>
-        <label>
-          {t('settings.address')}
-          <input value={address} onChange={(e) => setAddress(e.target.value)} />
-        </label>
+        <label>{t('settings.name')}<input value={name} onChange={(e) => setName(e.target.value)} required /></label>
+        <label>{t('settings.cityRegion')}<input value={city} onChange={(e) => setCity(e.target.value)} required /></label>
+        <label>{t('settings.address')}<input value={address} onChange={(e) => setAddress(e.target.value)} /></label>
         <fieldset>
           <legend>{t('settings.brandsAvailable')}</legend>
           {brands.map((b) => (
             <label key={b.id} className="check">
-              <input
-                type="checkbox"
-                checked={selectedBrands.includes(b.id)}
-                onChange={() => toggleBrand(b.id)}
-              />
+              <input type="checkbox" checked={selectedBrands.includes(b.id)} onChange={() => toggleBrand(b.id)} />
               {b.name}
             </label>
           ))}
         </fieldset>
-        <button className="btn-primary" disabled={busy}>
-          {t('settings.save')}
-        </button>
+        <button className="btn-primary" disabled={busy}>{t('settings.save')}</button>
       </form>
     </div>
   );

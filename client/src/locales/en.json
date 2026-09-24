@@ -73,7 +73,16 @@
     "leadDistribution": "Lead Distribution Mode",
     "managerSelfPick": "Manager Self-Pick",
     "callCenter": "Call Center Qualification",
-    "distributionHint": "Current mode: leads enter the pool and managers self-pick. Call Center mode can be switched on later."
+    "distributionHint": "Current mode: leads enter the pool and managers self-pick. Call Center mode can be switched on later.",
+    "addUser": "Add User",
+    "editUser": "Edit User",
+    "scope": "Scope",
+    "deactivate": "Deactivate",
+    "activate": "Activate",
+    "phone": "Phone",
+    "leaveBlank": "leave blank to keep current",
+    "dealershipAccess": "Dealership Access",
+    "brandAccess": "Brand Access"
   },
   "common": {
     "language": "Language",
@@ -85,7 +94,8 @@
     "saveFailed": "Failed to save",
     "close": "Close",
     "cancel": "Cancel",
-    "save": "Save"
+    "save": "Save",
+    "edit": "Edit"
   },
   "lead": {
     "takeLead": "Take Lead",

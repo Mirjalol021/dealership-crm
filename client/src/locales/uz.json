@@ -73,7 +73,16 @@
     "leadDistribution": "Lidlarni taqsimlash rejimi",
     "managerSelfPick": "Menejer o'zi oladi",
     "callCenter": "Call-markaz saralaydi",
-    "distributionHint": "Hozirgi rejim: lidlar havzaga tushadi va menejer o'zi oladi. Call-markaz rejimi keyinroq yoqiladi."
+    "distributionHint": "Hozirgi rejim: lidlar havzaga tushadi va menejer o'zi oladi. Call-markaz rejimi keyinroq yoqiladi.",
+    "addUser": "Foydalanuvchi qo'shish",
+    "editUser": "Tahrirlash",
+    "scope": "Ruxsat",
+    "deactivate": "O'chirish",
+    "activate": "Yoqish",
+    "phone": "Telefon",
+    "leaveBlank": "o'zgartirmaslik uchun bo'sh qoldiring",
+    "dealershipAccess": "Dilerlik ruxsati",
+    "brandAccess": "Brend ruxsati"
   },
   "common": {
     "language": "Til",
@@ -85,7 +94,8 @@
     "saveFailed": "Saqlab bo'lmadi",
     "close": "Yopish",
     "cancel": "Bekor qilish",
-    "save": "Saqlash"
+    "save": "Saqlash",
+    "edit": "Tahrirlash"
   },
   "lead": {
     "takeLead": "Lidni olish",

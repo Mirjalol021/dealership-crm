@@ -29,7 +29,6 @@ import { ReportsPage } from './pages/ReportsPage';
 import { SalesPage } from './pages/SalesPage';
 import { ImportPage } from './pages/ImportPage';
 import { LeadFormsPage } from './pages/LeadFormsPage';
-import { AuditLogPage } from './pages/AuditLogPage';
 
 // Wraps a page element with an optional capability gate (UX-level; backend enforces).
 function guarded(capability: string, node: ReactNode) {
@@ -84,7 +83,6 @@ export function App() {
         <Route path="/lead-forms" element={guarded('settings.manage', <LeadFormsPage />)} />
         <Route path="/users" element={guarded('users.manage', <UsersPage />)} />
         <Route path="/settings" element={guarded('settings.manage', <SettingsPage />)} />
-        <Route path="/audit-log" element={guarded('settings.manage', <AuditLogPage />)} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
