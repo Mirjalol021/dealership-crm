@@ -135,7 +135,8 @@
     "manager": "Manager",
     "apply": "Apply",
     "assignmentHistory": "Assignment History",
-    "existingCustomer": "Existing customer found — new lead linked to it"
+    "existingCustomer": "Existing customer found — new lead linked to it",
+    "campaign": "Campaign"
   },
   "pipelineStatus": {
     "NEW": "New",
@@ -373,7 +374,17 @@
     "verifyToken": "Verify Token",
     "webhookSecret": "Webhook Secret",
     "fieldMapping": "Field Mapping",
-    "allFormsTitle": "Meta/Telegram Forms"
+    "allFormsTitle": "Meta/Telegram Forms",
+    "importCustomers": "Customer Database",
+    "importSoldCars": "Historical Sold Cars",
+    "importAfterSalesStock": "AfterSales Opening Stock",
+    "columns": "Columns",
+    "form": "Form",
+    "groupBy": "Group by",
+    "bySourceLabel": "By Source",
+    "leadsLabel": "Leads",
+    "visitsLabel": "Visits",
+    "soldLabel": "Sold"
   },
   "dash": {
     "newToday": "New Leads Today",

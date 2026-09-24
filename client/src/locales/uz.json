@@ -135,7 +135,8 @@
     "manager": "Menejer",
     "apply": "Qo'llash",
     "assignmentHistory": "Tayinlash tarixi",
-    "existingCustomer": "Mavjud mijoz topildi — yangi lid unga bog'landi"
+    "existingCustomer": "Mavjud mijoz topildi — yangi lid unga bog'landi",
+    "campaign": "Kampaniya"
   },
   "pipelineStatus": {
     "NEW": "Yangi",
@@ -373,7 +374,17 @@
     "verifyToken": "Verify token",
     "webhookSecret": "Webhook secret",
     "fieldMapping": "Maydon moslashuvi",
-    "allFormsTitle": "Meta/Telegram formalari"
+    "allFormsTitle": "Meta/Telegram formalari",
+    "importCustomers": "Mijozlar bazasi",
+    "importSoldCars": "Tarixiy sotuvlar",
+    "importAfterSalesStock": "AfterSales boshlang'ich ombor",
+    "columns": "Ustunlar",
+    "form": "Forma",
+    "groupBy": "Guruhlash",
+    "bySourceLabel": "Manba bo'yicha",
+    "leadsLabel": "Lidlar",
+    "visitsLabel": "Tashriflar",
+    "soldLabel": "Sotildi"
   },
   "dash": {
     "newToday": "Bugun yangi lidlar",

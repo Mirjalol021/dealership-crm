@@ -135,7 +135,8 @@
     "manager": "Менеджер",
     "apply": "Применить",
     "assignmentHistory": "История назначений",
-    "existingCustomer": "Существующий клиент найден — новый лид привязан к нему"
+    "existingCustomer": "Существующий клиент найден — новый лид привязан к нему",
+    "campaign": "Кампания"
   },
   "pipelineStatus": {
     "NEW": "Новый",
@@ -373,7 +374,17 @@
     "verifyToken": "Verify token",
     "webhookSecret": "Webhook secret",
     "fieldMapping": "Сопоставление полей",
-    "allFormsTitle": "Формы Meta/Telegram"
+    "allFormsTitle": "Формы Meta/Telegram",
+    "importCustomers": "База клиентов",
+    "importSoldCars": "Исторические продажи",
+    "importAfterSalesStock": "Начальный склад AfterSales",
+    "columns": "Столбцы",
+    "form": "Форма",
+    "groupBy": "Группировать по",
+    "bySourceLabel": "По источнику",
+    "leadsLabel": "Лиды",
+    "visitsLabel": "Визиты",
+    "soldLabel": "Продано"
   },
   "dash": {
     "newToday": "Новые лиды сегодня",

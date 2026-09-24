@@ -70,46 +70,65 @@ export async function reportRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // ---------- MARKETING REPORT (§67) ----------
+  // group=source (default) | campaign | form  — enables drill-down (§26).
+  // Optional filters: source, campaign (narrow a campaign/form view).
   app.get('/api/reports/marketing', { preHandler: [requirePermission('reports.marketing')] }, async (req, reply) => {
     const user = req.user!;
     const q = req.query as Record<string, string | undefined>;
     const r = rangeFromQuery(q);
+    const group: 'source' | 'campaign' | 'form' = q.group === 'campaign' ? 'campaign' : q.group === 'form' ? 'form' : 'source';
+
     const where: Record<string, unknown> = { ...scopeWhere(user) };
     if (r.gte || r.lt) where.createdAt = r;
+    if (q.source) where.source = q.source;
+    if (q.campaign) where.campaign = q.campaign;
 
-    const bySource = await prisma.lead.groupBy({
-      by: ['source'],
+    // Rows keyed by the requested grouping. Null campaign/form collapse to "—".
+    const rows = await prisma.lead.findMany({
       where,
-      _count: { _all: true },
+      select: { id: true, source: true, campaign: true, formId: true, pipelineStatus: true },
     });
 
-    // Sold by source.
-    const soldBySource = await prisma.lead.groupBy({
-      by: ['source'],
-      where: { ...where, pipelineStatus: 'SOLD' },
-      _count: { _all: true },
-    });
-    const soldMap = new Map(soldBySource.map((s) => [s.source, s._count._all]));
+    const keyOf = (l: { source: string; campaign: string | null; formId: string | null }): string =>
+      group === 'source' ? l.source : group === 'campaign' ? (l.campaign ?? '—') : (l.formId ?? '—');
 
-    // Visits by source: appointments joined to their lead's source.
-    const appts = await prisma.appointment.findMany({
-      where: r.gte ? { date: { gte: r.gte, ...(r.lt ? { lt: r.lt } : {}) } } : {},
-      include: { lead: { select: { source: true } } },
-    });
-    const visitsMap = new Map<string, number>();
-    for (const a of appts) {
-      const src = a.lead?.source ?? 'OTHER';
-      visitsMap.set(src, (visitsMap.get(src) ?? 0) + 1);
+    // Aggregate leads + sold per key.
+    const agg = new Map<string, { leads: number; sold: number; ids: string[] }>();
+    for (const l of rows) {
+      const k = keyOf(l);
+      const e = agg.get(k) ?? { leads: 0, sold: 0, ids: [] };
+      e.leads += 1;
+      if (l.pipelineStatus === 'SOLD') e.sold += 1;
+      e.ids.push(l.id);
+      agg.set(k, e);
     }
 
-    return reply.send({
-      bySource: bySource.map((s) => ({
-        source: s.source,
-        leads: s._count._all,
-        visits: visitsMap.get(s.source) ?? 0,
-        sold: soldMap.get(s.source) ?? 0,
-      })),
+    // Visits: appointments whose lead belongs to each key (scoped by lead ids).
+    const appts = await prisma.appointment.findMany({
+      where: {
+        leadId: { in: rows.map((x) => x.id) },
+        ...(r.gte ? { date: { gte: r.gte, ...(r.lt ? { lt: r.lt } : {}) } } : {}),
+      },
+      select: { leadId: true },
     });
+    const leadToKey = new Map(rows.map((x) => [x.id, keyOf(x)]));
+    const visitsByKey = new Map<string, number>();
+    for (const a of appts) {
+      const k = leadToKey.get(a.leadId);
+      if (k) visitsByKey.set(k, (visitsByKey.get(k) ?? 0) + 1);
+    }
+
+    const bySource = [...agg.entries()]
+      .map(([key, v]) => ({
+        key,
+        source: key, // kept for backwards-compatible UI
+        leads: v.leads,
+        visits: visitsByKey.get(key) ?? 0,
+        sold: v.sold,
+      }))
+      .sort((a, b) => b.leads - a.leads);
+
+    return reply.send({ group, bySource });
   });
 
   // ---------- INVENTORY REPORT (§67) ----------

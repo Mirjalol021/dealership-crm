@@ -8,6 +8,16 @@ interface PreviewRow {
   reason?: string;
 }
 
+type ImportType = 'leads' | 'inventory' | 'customers' | 'sold_cars' | 'aftersales_stock';
+
+const COLUMN_HINTS: Record<ImportType, string> = {
+  leads: 'name, phone, brand, dealership',
+  inventory: 'brand, model, trim, color, vin, dealership',
+  customers: 'name, phone',
+  sold_cars: 'name, phone, brand, model, vin, saledate, saleprice, margin, paymenttype, dealership',
+  aftersales_stock: 'itemname, category, unit, quantity, sellingprice, purchasecost, partnumber, dealership',
+};
+
 // Simple CSV parser: first line = headers, supports comma or semicolon.
 function parseCsv(text: string): Record<string, string>[] {
   const lines = text.trim().split(/\r?\n/).filter(Boolean);
@@ -24,7 +34,7 @@ function parseCsv(text: string): Record<string, string>[] {
 
 export function ImportPage() {
   const { t } = useTranslation();
-  const [type, setType] = useState<'leads' | 'inventory'>('leads');
+  const [type, setType] = useState<ImportType>('leads');
   const [rows, setRows] = useState<Record<string, string>[]>([]);
   const [preview, setPreview] = useState<PreviewRow[]>([]);
   const [counts, setCounts] = useState<{ total: number; valid: number; invalid: number; duplicate: number } | null>(null);
@@ -49,7 +59,7 @@ export function ImportPage() {
     setBusy(true);
     setMessage('');
     try {
-      const r = await api.post<{ preview: PreviewRow[]; counts: typeof counts }>(`/api/import/${type}?`, { rows, confirm });
+      const r = await api.post<{ preview: PreviewRow[]; counts: typeof counts }>(`/api/import/${type}`, { rows, confirm });
       setPreview(r.preview);
       setCounts(r.counts);
       if (confirm) setMessage(`✓ ${t('rep.confirmImport')}: ${r.counts?.valid}`);
@@ -64,22 +74,21 @@ export function ImportPage() {
 
       <div className="card" style={{ maxWidth: 720 }}>
         <label>{t('rep.import')}
-          <select value={type} onChange={(e) => { setType(e.target.value as 'leads' | 'inventory'); setRows([]); setPreview([]); }}>
+          <select value={type} onChange={(e) => { setType(e.target.value as ImportType); setRows([]); setPreview([]); setCounts(null); setMessage(''); }}>
             <option value="leads">{t('rep.importLeads')}</option>
+            <option value="customers">{t('rep.importCustomers')}</option>
             <option value="inventory">{t('rep.importInventory')}</option>
+            <option value="sold_cars">{t('rep.importSoldCars')}</option>
+            <option value="aftersales_stock">{t('rep.importAfterSalesStock')}</option>
           </select>
         </label>
         <label>{t('rep.upload')} (CSV)
           <input type="file" accept=".csv,text/csv" onChange={handleFile} />
         </label>
-        <p className="muted small">
-          {type === 'leads' ? 'Ustunlar: name, phone, brand' : 'Ustunlar: brand, model, vin'}
-        </p>
+        <p className="muted small">{t('rep.columns')}: {COLUMN_HINTS[type]}</p>
 
         {rows.length > 0 && (
-          <>
-            <button className="btn-ghost" onClick={() => send(false)} disabled={busy}>{t('rep.previewTitle')}</button>
-          </>
+          <button className="btn-ghost" onClick={() => send(false)} disabled={busy}>{t('rep.previewTitle')}</button>
         )}
       </div>
 

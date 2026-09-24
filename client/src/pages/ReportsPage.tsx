@@ -25,6 +25,7 @@ export function ReportsPage() {
   const [dealerships, setDealerships] = useState<Dealership[]>([]);
   const [brandId, setBrandId] = useState('');
   const [dealershipId, setDealershipId] = useState('');
+  const [group, setGroup] = useState<'source' | 'campaign' | 'form'>('source');
   const [data, setData] = useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
@@ -38,6 +39,7 @@ export function ReportsPage() {
     const q = new URLSearchParams({ range, month });
     if (brandId) q.set('brandId', brandId);
     if (dealershipId) q.set('dealershipId', dealershipId);
+    if (tab === 'marketing') q.set('group', group);
     const endpoint =
       tab === 'sales' ? '/api/reports/sales'
       : tab === 'marketing' ? '/api/reports/marketing'
@@ -45,7 +47,7 @@ export function ReportsPage() {
       : tab === 'finance' ? '/api/reports/finance'
       : '/api/reports/aftersales';
     api.get<Record<string, unknown>>(`${endpoint}?${q}`).then(setData);
-  }, [tab, range, month, brandId, dealershipId]);
+  }, [tab, range, month, brandId, dealershipId, group]);
 
   function download(type: string, format: 'csv' | 'xlsx') {
     const q = new URLSearchParams({ format });
@@ -75,6 +77,15 @@ export function ReportsPage() {
         </label>
         {tab === 'finance' && (
           <label>{t('fin.month')}<input type="month" value={month} onChange={(e) => setMonth(e.target.value)} /></label>
+        )}
+        {tab === 'marketing' && (
+          <label>{t('rep.groupBy')}
+            <select value={group} onChange={(e) => setGroup(e.target.value as 'source' | 'campaign' | 'form')}>
+              <option value="source">{t('lead.source')}</option>
+              <option value="campaign">{t('lead.campaign')}</option>
+              <option value="form">{t('rep.form')}</option>
+            </select>
+          </label>
         )}
         <label>{t('lead.brand')}
           <select value={brandId} onChange={(e) => setBrandId(e.target.value)}>
