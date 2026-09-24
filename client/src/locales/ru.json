@@ -80,7 +80,12 @@
     "loading": "Загрузка…",
     "active": "Активен",
     "inactive": "Неактивен",
-    "none": "Нет"
+    "none": "Нет",
+    "saved": "Сохранено",
+    "saveFailed": "Не удалось сохранить",
+    "close": "Закрыть",
+    "cancel": "Отмена",
+    "save": "Сохранить"
   },
   "lead": {
     "takeLead": "Взять лид",
@@ -140,7 +145,9 @@
     "apply": "Применить",
     "assignmentHistory": "История назначений",
     "existingCustomer": "Существующий клиент найден — новый лид привязан к нему",
-    "campaign": "Кампания"
+    "campaign": "Кампания",
+    "followUpRequired": "Укажите дату повторного звонка",
+    "formAnswers": "Ответы формы"
   },
   "pipelineStatus": {
     "NEW": "Новый",
@@ -423,5 +430,20 @@
       "DELETE": "Удалено",
       "STATUS_CHANGE": "Смена статуса"
     }
+  },
+  "activityEvent": {
+    "LEAD_CREATED": "Лид создан",
+    "LEAD_ENTERED_POOL": "Попал в пул",
+    "LEAD_TAKEN": "Взят",
+    "LEAD_ASSIGNED": "Назначен",
+    "LEAD_REASSIGNED": "Переназначен",
+    "RESULT_UPDATED": "Результат обновлён",
+    "FOLLOW_UP_SCHEDULED": "Запланирован звонок",
+    "PIPELINE_CHANGED": "Этап изменён",
+    "COMMENT_ADDED": "Добавлен комментарий",
+    "VISIT_PLANNED": "Запланирован визит",
+    "TEST_DRIVE_COMPLETED": "Тест-драйв",
+    "SOLD": "Продано",
+    "LOST": "Потеряно"
   }
 }

@@ -97,13 +97,14 @@ function LeadProcessor({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  // Which extra fields a result needs (§14).
+  // Which extra fields a result needs (§14). No Answer and Busy both require a follow-up.
   const needsFollowUp = ['NO_ANSWER', 'CLIENT_BUSY', 'INFO_GIVEN_THINKING', 'INFO_GIVEN_VISIT_EXPECTED'].includes(result ?? '');
-  const isBusy = result === 'CLIENT_BUSY';
+  const followUpRequired = result === 'CLIENT_BUSY' || result === 'NO_ANSWER';
   const needsAppointment = result === 'VISIT_PLANNED';
 
   async function save() {
     if (!result) return;
+    if (followUpRequired && !followUp) { setError(t('lead.followUpRequired')); return; }
     setBusy(true);
     setError('');
     try {
@@ -136,12 +137,12 @@ function LeadProcessor({
 
       {needsFollowUp && (
         <label className="followup-label">
-          {t('lead.followUp')} {isBusy && <span className="req">*</span>}
+          {t('lead.followUp')} {followUpRequired && <span className="req">*</span>}
           <input
             type="datetime-local"
             value={followUp}
             onChange={(e) => setFollowUp(e.target.value)}
-            required={isBusy}
+            required={followUpRequired}
           />
         </label>
       )}
