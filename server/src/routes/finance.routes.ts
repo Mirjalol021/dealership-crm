@@ -5,6 +5,7 @@ import { requirePermission } from '../auth/guard.js';
 import {
   vehicleContribution, netResult, monthKey, type TaxSettings,
 } from '../lib/finance.js';
+import { scopeWhere } from '../auth/scope.js';
 
 async function taxSettings(): Promise<TaxSettings> {
   let s = await prisma.financeSettings.findUnique({ where: { id: 'singleton' } });
@@ -51,8 +52,9 @@ export async function financeRoutes(app: FastifyInstance): Promise<void> {
 
   // ---------- Expenses (§36-§38) ----------
   app.get('/api/expenses', { preHandler: [requirePermission('finance.view')] }, async (req, reply) => {
+    const user = req.user!;
     const q = req.query as Record<string, string | undefined>;
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { ...scopeWhere(user, { dealershipField: 'dealershipId', brandField: 'brandId' }) };
     if (q.accountingMonth) where.accountingMonth = q.accountingMonth;
     if (q.dealershipId) where.dealershipId = q.dealershipId;
     if (q.brandId) where.brandId = q.brandId;
@@ -134,8 +136,9 @@ export async function financeRoutes(app: FastifyInstance): Promise<void> {
 
   // ---------- KPI bonuses (§34) ----------
   app.get('/api/kpi-bonuses', { preHandler: [requirePermission('finance.view')] }, async (req, reply) => {
+    const user = req.user!;
     const q = req.query as Record<string, string | undefined>;
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { ...scopeWhere(user, { dealershipField: 'dealershipId', brandField: 'brandId' }) };
     if (q.month) where.month = q.month;
     if (q.brandId) where.brandId = q.brandId;
     const bonuses = await prisma.kpiBonus.findMany({
@@ -215,7 +218,7 @@ export async function financeRoutes(app: FastifyInstance): Promise<void> {
     // Sold cars for the month. Profit View → by saleDate in month; Cash Flow → by saleDate too
     // (a sale is a point-in-time event; we use saleDate for both here).
     const soldCars = await prisma.soldCar.findMany({
-      where: { saleDate: { gte, lt }, ...brandFilter, ...dealershipFilter },
+      where: { saleDate: { gte, lt }, ...brandFilter, ...dealershipFilter, ...scopeWhere(req.user!) },
       include: { customerBonuses: true, vinBonuses: true },
     });
 

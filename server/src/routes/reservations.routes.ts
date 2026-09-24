@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../db.js';
 import { requirePermission } from '../auth/guard.js';
+import { scopeWhere, canAccessScope } from '../auth/scope.js';
 import { normalizePhone } from '../lib/phone.js';
 import { findOrCreateCustomer } from '../lib/leadService.js';
 
@@ -42,8 +43,10 @@ function resCard(r: {
 
 export async function reservationRoutes(app: FastifyInstance): Promise<void> {
   // List reservations (§28).
-  app.get('/api/reservations', { preHandler: [requirePermission('sales.view')] }, async (_req, reply) => {
+  app.get('/api/reservations', { preHandler: [requirePermission('sales.view')] }, async (req, reply) => {
+    const user = req.user!;
     const reservations = await prisma.vehicleReservation.findMany({
+      where: { vehicle: scopeWhere(user) },
       include: {
         customer: true,
         vehicle: { include: { brand: true } },
@@ -64,6 +67,7 @@ export async function reservationRoutes(app: FastifyInstance): Promise<void> {
 
     const vehicle = await prisma.inventoryVehicle.findUnique({ where: { id: d.vehicleId } });
     if (!vehicle) return reply.code(404).send({ error: 'VEHICLE_NOT_FOUND' });
+    if (!canAccessScope(user, vehicle)) return reply.code(403).send({ error: 'FORBIDDEN' });
     if (vehicle.status !== 'AVAILABLE') return reply.code(409).send({ error: 'VEHICLE_NOT_AVAILABLE' });
 
     const normalized = normalizePhone(d.phone);
@@ -95,9 +99,11 @@ export async function reservationRoutes(app: FastifyInstance): Promise<void> {
 
   // Cancel a reservation — returns the vehicle to AVAILABLE.
   app.post('/api/reservations/:id/cancel', { preHandler: [requirePermission('sales.manage')] }, async (req, reply) => {
+    const user = req.user!;
     const { id } = req.params as { id: string };
-    const reservation = await prisma.vehicleReservation.findUnique({ where: { id } });
+    const reservation = await prisma.vehicleReservation.findUnique({ where: { id }, include: { vehicle: true } });
     if (!reservation) return reply.code(404).send({ error: 'NOT_FOUND' });
+    if (!canAccessScope(user, reservation.vehicle)) return reply.code(403).send({ error: 'FORBIDDEN' });
 
     await prisma.$transaction(async (tx) => {
       await tx.vehicleReservation.delete({ where: { id } });

@@ -4,6 +4,7 @@ import { prisma } from '../db.js';
 import { requireAuth, requirePermission, requireAnyPermission } from '../auth/guard.js';
 import { normalizePhone } from '../lib/phone.js';
 import { findOrCreateCustomer, logActivity, logAssignment, nextAttemptNo } from '../lib/leadService.js';
+import { scopeWhere, canAccessScope } from '../auth/scope.js';
 import type { AuthUser } from '../auth/session.js';
 
 const RESULT_ENUM = [
@@ -29,16 +30,19 @@ const RESULT_TO_PIPELINE: Record<string, (typeof PIPELINE_ENUM)[number]> = {
   WRONG_NUMBER: 'LOST',
 };
 
-function scopeToUser(lead: { assignedUserId: string | null }, user: AuthUser): boolean {
-  if (user.role === 'SALES_MANAGER') return lead.assignedUserId === user.id;
-  return true;
+// Sales Managers may only touch their own leads; everyone else is additionally
+// bounded by their dealership/brand scope (§5, §73).
+function scopeToUser(lead: { assignedUserId: string | null; dealershipId: string; brandId: string }, user: AuthUser): boolean {
+  if (user.role === 'SALES_MANAGER' && lead.assignedUserId !== user.id) return false;
+  return canAccessScope(user, lead);
 }
 
 export async function leadRoutes(app: FastifyInstance): Promise<void> {
   // --- Lead Pool: unassigned leads (§7) ---
   app.get('/api/leads/pool', { preHandler: [requirePermission('leads.take')] }, async (req, reply) => {
+    const user = req.user!;
     const leads = await prisma.lead.findMany({
-      where: { assignedUserId: null },
+      where: { assignedUserId: null, ...scopeWhere(user) },
       include: { customer: true, brand: true, dealership: true },
       orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }],
       take: 200,
@@ -50,6 +54,10 @@ export async function leadRoutes(app: FastifyInstance): Promise<void> {
   app.post('/api/leads/:id/take', { preHandler: [requirePermission('leads.take')] }, async (req, reply) => {
     const user = req.user!;
     const { id } = req.params as { id: string };
+
+    const existing = await prisma.lead.findUnique({ where: { id } });
+    if (!existing) return reply.code(404).send({ error: 'NOT_FOUND' });
+    if (!canAccessScope(user, existing)) return reply.code(403).send({ error: 'FORBIDDEN' });
 
     // Atomic: only succeeds if still unassigned.
     const result = await prisma.lead.updateMany({
@@ -83,6 +91,7 @@ export async function leadRoutes(app: FastifyInstance): Promise<void> {
 
     const lead = await prisma.lead.findUnique({ where: { id } });
     if (!lead) return reply.code(404).send({ error: 'NOT_FOUND' });
+    if (!canAccessScope(user, lead)) return reply.code(403).send({ error: 'FORBIDDEN' });
 
     const target = await prisma.user.findUnique({ where: { id: parsed.data.toUserId } });
     if (!target || !target.active) return reply.code(400).send({ error: 'INVALID_TARGET' });
@@ -116,7 +125,7 @@ export async function leadRoutes(app: FastifyInstance): Promise<void> {
     const user = req.user!;
     const q = req.query as Record<string, string | undefined>;
 
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { ...scopeWhere(user) };
     if (user.role === 'SALES_MANAGER') where.assignedUserId = user.id;
     else if (q.managerId) where.assignedUserId = q.managerId;
 
@@ -164,7 +173,10 @@ export async function leadRoutes(app: FastifyInstance): Promise<void> {
   // --- Today / Lead Processing (§16) ---
   app.get('/api/leads/today', { preHandler: [requireAnyPermission(['leads.view.all', 'leads.view.own'])] }, async (req, reply) => {
     const user = req.user!;
-    const base = user.role === 'SALES_MANAGER' ? { assignedUserId: user.id } : {};
+    const base = {
+      ...scopeWhere(user),
+      ...(user.role === 'SALES_MANAGER' ? { assignedUserId: user.id } : {}),
+    };
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const endOfToday = new Date(startOfToday.getTime() + 86400000);
@@ -177,7 +189,7 @@ export async function leadRoutes(app: FastifyInstance): Promise<void> {
         prisma.lead.count({ where: { ...base, nextFollowUpAt: { lt: startOfToday }, pipelineStatus: { notIn: ['SOLD', 'LOST'] } } }),
         prisma.lead.count({ where: { ...base, lastResult: 'INFO_GIVEN_VISIT_EXPECTED' } }),
         prisma.appointment.count({
-          where: { date: { gte: startOfToday, lt: endOfToday }, status: 'PLANNED', ...(user.role === 'SALES_MANAGER' ? { managerId: user.id } : {}) },
+          where: { date: { gte: startOfToday, lt: endOfToday }, status: 'PLANNED', ...(user.role === 'SALES_MANAGER' ? { managerId: user.id } : {}), ...scopeWhere(user) },
         }),
       ]);
 
@@ -217,6 +229,11 @@ export async function leadRoutes(app: FastifyInstance): Promise<void> {
     const parsed = schema.safeParse(req.body);
     if (!parsed.success) return reply.code(400).send({ error: 'INVALID_INPUT', details: parsed.error.flatten() });
     const d = parsed.data;
+
+    // A scoped user may only create leads inside their own dealership/brand.
+    if (!canAccessScope(user, { dealershipId: d.dealershipId, brandId: d.brandId })) {
+      return reply.code(403).send({ error: 'FORBIDDEN' });
+    }
 
     const normalized = normalizePhone(d.phone);
     let customerExisted = false;
@@ -267,7 +284,7 @@ export async function leadRoutes(app: FastifyInstance): Promise<void> {
       },
     });
     if (!lead) return reply.code(404).send({ error: 'NOT_FOUND' });
-    if (!scopeToUser(lead, user) && user.role !== 'SUPER_ADMIN') {
+    if (!scopeToUser(lead, user)) {
       return reply.code(403).send({ error: 'FORBIDDEN' });
     }
     // Enrich assignment history with user names (§22).
@@ -322,7 +339,7 @@ export async function leadRoutes(app: FastifyInstance): Promise<void> {
 
     const lead = await prisma.lead.findUnique({ where: { id } });
     if (!lead) return reply.code(404).send({ error: 'NOT_FOUND' });
-    if (!scopeToUser(lead, user) && user.role !== 'SUPER_ADMIN') return reply.code(403).send({ error: 'FORBIDDEN' });
+    if (!scopeToUser(lead, user)) return reply.code(403).send({ error: 'FORBIDDEN' });
 
     const now = new Date();
     const suggested = RESULT_TO_PIPELINE[d.result];
@@ -384,6 +401,7 @@ export async function leadRoutes(app: FastifyInstance): Promise<void> {
     // Return next lead for Save & Next flow (§16).
     const next = await prisma.lead.findFirst({
       where: {
+        ...scopeWhere(user),
         assignedUserId: user.role === 'SALES_MANAGER' ? user.id : undefined,
         pipelineStatus: { notIn: ['SOLD', 'LOST'] },
         id: { not: id },
@@ -403,7 +421,7 @@ export async function leadRoutes(app: FastifyInstance): Promise<void> {
 
     const lead = await prisma.lead.findUnique({ where: { id } });
     if (!lead) return reply.code(404).send({ error: 'NOT_FOUND' });
-    if (!scopeToUser(lead, user) && user.role !== 'SUPER_ADMIN') return reply.code(403).send({ error: 'FORBIDDEN' });
+    if (!scopeToUser(lead, user)) return reply.code(403).send({ error: 'FORBIDDEN' });
 
     await prisma.$transaction(async (tx) => {
       await tx.leadComment.create({ data: { leadId: id, authorId: user.id, text: parsed.data.text } });
@@ -414,8 +432,9 @@ export async function leadRoutes(app: FastifyInstance): Promise<void> {
 
   // --- Management pipeline table by manager (§25) ---
   app.get('/api/leads/analytics/pipeline', { preHandler: [requirePermission('leads.view.all')] }, async (req, reply) => {
+    const user = req.user!;
     const q = req.query as Record<string, string | undefined>;
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { ...scopeWhere(user) };
     if (q.dealershipId) where.dealershipId = q.dealershipId;
     if (q.brandId) where.brandId = q.brandId;
     if (q.managerId) where.assignedUserId = q.managerId;
@@ -446,8 +465,9 @@ export async function leadRoutes(app: FastifyInstance): Promise<void> {
 
   // --- Management lead result table by manager (§25) ---
   app.get('/api/leads/analytics/result', { preHandler: [requirePermission('leads.view.all')] }, async (req, reply) => {
+    const user = req.user!;
     const q = req.query as Record<string, string | undefined>;
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { ...scopeWhere(user) };
     if (q.dealershipId) where.dealershipId = q.dealershipId;
     if (q.brandId) where.brandId = q.brandId;
     if (q.managerId) where.assignedUserId = q.managerId;

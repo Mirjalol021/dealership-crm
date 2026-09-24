@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../db.js';
 import { requirePermission } from '../auth/guard.js';
+import { scopeWhere, canAccessScope } from '../auth/scope.js';
 
 const createSchema = z.object({
   dealershipId: z.string(),
@@ -52,8 +53,9 @@ function vehicleCard(v: {
 export async function inventoryRoutes(app: FastifyInstance): Promise<void> {
   // List inventory with filters (§27).
   app.get('/api/inventory', { preHandler: [requirePermission('inventory.view')] }, async (req, reply) => {
+    const user = req.user!;
     const q = req.query as Record<string, string | undefined>;
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { ...scopeWhere(user) };
     if (q.status) where.status = q.status;
     if (q.brandId) where.brandId = q.brandId;
     if (q.dealershipId) where.dealershipId = q.dealershipId;
@@ -82,9 +84,13 @@ export async function inventoryRoutes(app: FastifyInstance): Promise<void> {
 
   // Create vehicle (§27) — Super Admin / inventory managers.
   app.post('/api/inventory', { preHandler: [requirePermission('inventory.manage')] }, async (req, reply) => {
+    const user = req.user!;
     const parsed = createSchema.safeParse(req.body);
     if (!parsed.success) return reply.code(400).send({ error: 'INVALID_INPUT', details: parsed.error.flatten() });
     const d = parsed.data;
+    if (!canAccessScope(user, { dealershipId: d.dealershipId, brandId: d.brandId })) {
+      return reply.code(403).send({ error: 'FORBIDDEN' });
+    }
 
     const exists = await prisma.inventoryVehicle.findUnique({ where: { vin: d.vin } });
     if (exists) return reply.code(409).send({ error: 'VIN_TAKEN' });

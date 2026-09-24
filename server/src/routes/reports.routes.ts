@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { prisma } from '../db.js';
 import { requirePermission } from '../auth/guard.js';
 import { can } from '../auth/permissions.js';
+import { scopeWhere } from '../auth/scope.js';
 
 // Shared date-range helper (§68).
 function rangeFromQuery(q: Record<string, string | undefined>): { gte?: Date; lt?: Date } {
@@ -25,9 +26,10 @@ function rangeFromQuery(q: Record<string, string | undefined>): { gte?: Date; lt
 export async function reportRoutes(app: FastifyInstance): Promise<void> {
   // ---------- SALES REPORT (§67) ----------
   app.get('/api/reports/sales', { preHandler: [requirePermission('reports.sales')] }, async (req, reply) => {
+    const user = req.user!;
     const q = req.query as Record<string, string | undefined>;
     const r = rangeFromQuery(q);
-    const leadWhere: Record<string, unknown> = {};
+    const leadWhere: Record<string, unknown> = { ...scopeWhere(user) };
     if (r.gte || r.lt) leadWhere.createdAt = r;
     if (q.brandId) leadWhere.brandId = q.brandId;
     if (q.dealershipId) leadWhere.dealershipId = q.dealershipId;
@@ -69,9 +71,10 @@ export async function reportRoutes(app: FastifyInstance): Promise<void> {
 
   // ---------- MARKETING REPORT (§67) ----------
   app.get('/api/reports/marketing', { preHandler: [requirePermission('reports.marketing')] }, async (req, reply) => {
+    const user = req.user!;
     const q = req.query as Record<string, string | undefined>;
     const r = rangeFromQuery(q);
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { ...scopeWhere(user) };
     if (r.gte || r.lt) where.createdAt = r;
 
     const bySource = await prisma.lead.groupBy({
@@ -110,8 +113,9 @@ export async function reportRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // ---------- INVENTORY REPORT (§67) ----------
-  app.get('/api/reports/inventory', { preHandler: [requirePermission('inventory.view')] }, async (_req, reply) => {
-    const grouped = await prisma.inventoryVehicle.groupBy({ by: ['status'], _count: { _all: true } });
+  app.get('/api/reports/inventory', { preHandler: [requirePermission('inventory.view')] }, async (req, reply) => {
+    const user = req.user!;
+    const grouped = await prisma.inventoryVehicle.groupBy({ by: ['status'], where: { ...scopeWhere(user) }, _count: { _all: true } });
     const summary = { AVAILABLE: 0, RESERVED: 0, SOLD: 0 };
     for (const g of grouped) summary[g.status as keyof typeof summary] = g._count._all;
     return reply.send({ summary });
@@ -126,7 +130,7 @@ export async function reportRoutes(app: FastifyInstance): Promise<void> {
     const lt = new Date(y, m, 1);
 
     const soldCars = await prisma.soldCar.findMany({
-      where: { saleDate: { gte, lt } },
+      where: { saleDate: { gte, lt }, ...scopeWhere(req.user!) },
       include: { customerBonuses: true, vinBonuses: true },
     });
     const turnover = soldCars.reduce((s, c) => s + Number(c.salePrice), 0);
@@ -154,6 +158,7 @@ export async function reportRoutes(app: FastifyInstance): Promise<void> {
     const user = req.user!;
     const showCosts = can(user.role, 'costs.view');
     const visits = await prisma.serviceVisit.findMany({
+      where: { ...scopeWhere(user) },
       include: { inventoryUsage: true },
       orderBy: { serviceDate: 'desc' },
       take: 1000,

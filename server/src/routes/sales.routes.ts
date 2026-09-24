@@ -5,6 +5,7 @@ import { requireAuth, requirePermission } from '../auth/guard.js';
 import { can } from '../auth/permissions.js';
 import { normalizePhone } from '../lib/phone.js';
 import { findOrCreateCustomer } from '../lib/leadService.js';
+import { scopeWhere, canAccessScope } from '../auth/scope.js';
 
 const saleSchema = z.object({
   // Either link an inventory vehicle, or enter a VIN directly (historical/imported).
@@ -70,7 +71,7 @@ export async function salesRoutes(app: FastifyInstance): Promise<void> {
     const showCosts = can(user.role, 'costs.view');
     const q = req.query as Record<string, string | undefined>;
 
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { ...scopeWhere(user) };
     if (user.role === 'SALES_MANAGER') where.salesManagerId = user.id;
     if (q.brandId) where.brandId = q.brandId;
     if (q.dealershipId) where.dealershipId = q.dealershipId;
@@ -108,6 +109,7 @@ export async function salesRoutes(app: FastifyInstance): Promise<void> {
       },
     });
     if (!sale) return reply.code(404).send({ error: 'NOT_FOUND' });
+    if (!canAccessScope(user, sale)) return reply.code(403).send({ error: 'FORBIDDEN' });
     return reply.send({
       sale: {
         ...saleCard(sale, showCosts),
@@ -129,6 +131,9 @@ export async function salesRoutes(app: FastifyInstance): Promise<void> {
     const parsed = saleSchema.safeParse(req.body);
     if (!parsed.success) return reply.code(400).send({ error: 'INVALID_INPUT', details: parsed.error.flatten() });
     const d = parsed.data;
+    if (!canAccessScope(user, { dealershipId: d.dealershipId, brandId: d.brandId })) {
+      return reply.code(403).send({ error: 'FORBIDDEN' });
+    }
 
     const vinTaken = await prisma.soldCar.findUnique({ where: { vin: d.vin } });
     if (vinTaken) return reply.code(409).send({ error: 'VIN_ALREADY_SOLD' });

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../db.js';
 import { requireAuth, requirePermission } from '../auth/guard.js';
 import { can } from '../auth/permissions.js';
+import { scopeWhere, canAccessScope } from '../auth/scope.js';
 
 // Cost fields are returned ONLY to cost-authorized roles (§46, §73).
 // Service Staff must never receive purchaseCost / costSnapshot in any response.
@@ -34,7 +35,7 @@ export async function afterSalesRoutes(app: FastifyInstance): Promise<void> {
     const user = req.user!;
     const showCosts = can(user.role, 'costs.view');
     const q = req.query as Record<string, string | undefined>;
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { ...scopeWhere(user) };
     if (q.category) where.category = q.category;
     if (q.dealershipId) where.dealershipId = q.dealershipId;
     if (q.active === 'true') where.active = true;
@@ -184,7 +185,7 @@ export async function afterSalesRoutes(app: FastifyInstance): Promise<void> {
     const user = req.user!;
     const showCosts = can(user.role, 'costs.view');
     const q = req.query as Record<string, string | undefined>;
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { ...scopeWhere(user) };
     if (q.dealershipId) where.dealershipId = q.dealershipId;
 
     const items = await prisma.afterSalesInventoryItem.findMany({
@@ -224,7 +225,7 @@ export async function afterSalesRoutes(app: FastifyInstance): Promise<void> {
     const user = req.user!;
     const showCosts = can(user.role, 'costs.view');
     const q = req.query as Record<string, string | undefined>;
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { ...scopeWhere(user) };
     if (q.soldCarId) where.soldCarId = q.soldCarId;
     if (user.role === 'SERVICE_STAFF') where.serviceStaffId = user.id;
 
@@ -361,8 +362,9 @@ export async function afterSalesRoutes(app: FastifyInstance): Promise<void> {
 
   // ---------- Customers to Call (§44) ----------
   app.get('/api/aftersales/customers-to-call', { preHandler: [requirePermission('aftersales.view')] }, async (req, reply) => {
+    const user = req.user!;
     const q = req.query as Record<string, string | undefined>;
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { ...scopeWhere(user) };
     if (q.brandId) where.brandId = q.brandId;
     if (q.dealershipId) where.dealershipId = q.dealershipId;
 
@@ -402,8 +404,10 @@ export async function afterSalesRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // ---------- Sold Cars AfterSales database (§42) ----------
-  app.get('/api/aftersales/sold-cars', { preHandler: [requirePermission('aftersales.view')] }, async (_req, reply) => {
+  app.get('/api/aftersales/sold-cars', { preHandler: [requirePermission('aftersales.view')] }, async (req, reply) => {
+    const user = req.user!;
     const cars = await prisma.soldCar.findMany({
+      where: { ...scopeWhere(user) },
       include: { customer: true, brand: true, salesManager: { select: { name: true } } },
       orderBy: { saleDate: 'desc' },
       take: 500,

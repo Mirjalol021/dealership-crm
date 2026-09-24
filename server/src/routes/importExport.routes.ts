@@ -3,6 +3,7 @@ import ExcelJS from 'exceljs';
 import { prisma } from '../db.js';
 import { requireAuth, requirePermission } from '../auth/guard.js';
 import { can } from '../auth/permissions.js';
+import { scopeWhere } from '../auth/scope.js';
 import { normalizePhone } from '../lib/phone.js';
 import { findOrCreateCustomer } from '../lib/leadService.js';
 
@@ -42,7 +43,7 @@ export async function importExportRoutes(app: FastifyInstance): Promise<void> {
 
     if (type === 'leads') {
       sheet = 'Leads';
-      const where: Record<string, unknown> = {};
+      const where: Record<string, unknown> = { ...scopeWhere(user) };
       if (user.role === 'SALES_MANAGER') where.assignedUserId = user.id;
       if (q.brandId) where.brandId = q.brandId;
       const leads = await prisma.lead.findMany({
@@ -62,6 +63,7 @@ export async function importExportRoutes(app: FastifyInstance): Promise<void> {
       sheet = 'Sales';
       const showCosts = can(user.role, 'costs.view');
       const sales = await prisma.soldCar.findMany({
+        where: { ...scopeWhere(user) },
         include: { customer: true, brand: true, salesManager: { select: { name: true } } },
         orderBy: { saleDate: 'desc' }, take: 5000,
       });
@@ -74,7 +76,7 @@ export async function importExportRoutes(app: FastifyInstance): Promise<void> {
       ]);
     } else if (type === 'inventory') {
       sheet = 'Inventory';
-      const vehicles = await prisma.inventoryVehicle.findMany({ include: { brand: true, dealership: true } });
+      const vehicles = await prisma.inventoryVehicle.findMany({ where: { ...scopeWhere(user) }, include: { brand: true, dealership: true } });
       headers = ['Brand', 'Model', 'Trim', 'Color', 'VIN', 'ArrivalDate', 'SellingPrice', 'Status'];
       rows = vehicles.map((v) => [
         v.brand.name, v.model, v.trim, v.color, v.vin, v.arrivalDate.toISOString(),
@@ -82,7 +84,7 @@ export async function importExportRoutes(app: FastifyInstance): Promise<void> {
       ]);
     } else if (type === 'expenses') {
       sheet = 'Expenses';
-      const expenses = await prisma.expense.findMany({ orderBy: { accountingMonth: 'desc' } });
+      const expenses = await prisma.expense.findMany({ where: { ...scopeWhere(user) }, orderBy: { accountingMonth: 'desc' } });
       headers = ['AccountingMonth', 'PaymentDate', 'Category', 'Type', 'Amount', 'Method', 'Status'];
       rows = expenses.map((e) => [
         e.accountingMonth, e.paymentDate?.toISOString() ?? '', e.category, e.expenseType,
