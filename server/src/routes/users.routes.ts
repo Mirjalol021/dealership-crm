@@ -33,7 +33,7 @@ const updateSchema = z.object({
 
 function publicUser(u: {
   id: string; name: string; email: string; phone: string | null; role: string;
-  preferredLanguage: string; active: boolean;
+  preferredLanguage: string; active: boolean; lastLoginAt?: Date | null;
   dealershipAccess?: { dealershipId: string }[];
   brandAccess?: { brandId: string }[];
 }) {
@@ -45,6 +45,7 @@ function publicUser(u: {
     role: u.role,
     preferredLanguage: u.preferredLanguage,
     active: u.active,
+    lastLoginAt: u.lastLoginAt ?? null,
     dealershipIds: u.dealershipAccess?.map((d) => d.dealershipId) ?? [],
     brandIds: u.brandAccess?.map((b) => b.brandId) ?? [],
   };

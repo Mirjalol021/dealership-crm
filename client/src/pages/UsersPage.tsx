@@ -11,6 +11,7 @@ interface UserRow {
   role: Role;
   preferredLanguage: string;
   active: boolean;
+  lastLoginAt: string | null;
   dealershipIds: string[];
   brandIds: string[];
 }
@@ -128,6 +129,7 @@ export function UsersPage() {
               <th>{t('roles.role')}</th>
               <th>{t('settings.scope')}</th>
               <th>{t('settings.active')}</th>
+              <th>{t('settings.lastLogin')}</th>
               <th></th>
             </tr>
           </thead>
@@ -141,6 +143,7 @@ export function UsersPage() {
                   {u.dealershipIds.length}D · {u.brandIds.length}B
                 </td>
                 <td>{u.active ? '✓' : '—'}</td>
+                <td className="muted small">{u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString() : '—'}</td>
                 <td className="actions-cell">
                   <button className="btn-ghost sm" onClick={() => openEdit(u)}>{t('common.edit')}</button>
                   <button className="btn-ghost sm" onClick={() => toggleActive(u)}>

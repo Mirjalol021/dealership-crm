@@ -46,6 +46,8 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     }
 
     clearLoginAttempts(ip, email);
+    // Record last successful login (§K5).
+    await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } }).catch(() => {});
     const token = await createSession(user.id, req);
     setSessionCookie(reply, token);
 

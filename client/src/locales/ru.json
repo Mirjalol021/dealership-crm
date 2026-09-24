@@ -83,7 +83,8 @@
     "phone": "Телефон",
     "leaveBlank": "оставьте пустым, чтобы не менять",
     "dealershipAccess": "Доступ к дилерам",
-    "brandAccess": "Доступ к брендам"
+    "brandAccess": "Доступ к брендам",
+    "lastLogin": "Последний вход"
   },
   "common": {
     "language": "Язык",

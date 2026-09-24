@@ -83,7 +83,8 @@
     "phone": "Telefon",
     "leaveBlank": "o'zgartirmaslik uchun bo'sh qoldiring",
     "dealershipAccess": "Dilerlik ruxsati",
-    "brandAccess": "Brend ruxsati"
+    "brandAccess": "Brend ruxsati",
+    "lastLogin": "Oxirgi kirish"
   },
   "common": {
     "language": "Til",
