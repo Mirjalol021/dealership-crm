@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
+import { ApiError } from '../api/client';
 import { homeForRole } from '../lib/navigation';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 
@@ -20,11 +21,24 @@ export function LoginPage() {
     setBusy(true);
     try {
       await login(email, password);
-      // Read the freshly stored user via a second mount; navigate by role.
       const me = await fetch('/api/auth/me', { credentials: 'include' }).then((r) => r.json());
       navigate(homeForRole(me.user.role), { replace: true });
-    } catch {
-      setError(t('auth.invalid'));
+    } catch (err: unknown) {
+      // Show the real reason instead of always saying "invalid credentials" (§G1).
+      if (err instanceof ApiError) {
+        if (err.status === 429) {
+          setError(t('auth.tooManyAttempts'));
+        } else if (err.status === 401) {
+          setError(t('auth.invalid'));
+        } else if (err.status >= 500) {
+          setError(t('auth.serverError'));
+        } else {
+          setError(t('auth.loginFailed'));
+        }
+      } else {
+        // Network / offline / proxy error.
+        setError(t('auth.networkError'));
+      }
     } finally {
       setBusy(false);
     }

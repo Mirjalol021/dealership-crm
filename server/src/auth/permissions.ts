@@ -60,7 +60,10 @@ export const ROLE_CAPABILITIES: Record<Role, Capability[]> = {
   ],
 
   CALL_CENTER: [
-    'leads.view.all', 'leads.assign', 'leads.take',
+    // Call Center works the pool, qualifies leads, and assigns to managers (§5.4).
+    // They also see leads they personally hold, so include view.own.
+    'leads.view.all', 'leads.view.own', 'leads.assign', 'leads.take', 'leads.create',
+    'inventory.view',
   ],
 
   SERVICE_STAFF: [

@@ -9,7 +9,11 @@
     "password": "Password",
     "signingIn": "Signing in…",
     "invalid": "Invalid email or password",
-    "welcome": "Welcome"
+    "welcome": "Welcome",
+    "tooManyAttempts": "Too many attempts. Please wait 15 minutes and try again.",
+    "serverError": "Server error. Please try again later.",
+    "loginFailed": "Login failed. Please try again.",
+    "networkError": "Cannot reach the server. Is it running?"
   },
   "nav": {
     "dashboard": "Dashboard",

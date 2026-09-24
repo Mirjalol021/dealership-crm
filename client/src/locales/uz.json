@@ -9,7 +9,11 @@
     "password": "Parol",
     "signingIn": "Kirilmoqda…",
     "invalid": "Email yoki parol xato",
-    "welcome": "Xush kelibsiz"
+    "welcome": "Xush kelibsiz",
+    "tooManyAttempts": "Juda ko'p urinish. 15 daqiqadan so'ng qayta urinib ko'ring.",
+    "serverError": "Server xatosi. Keyinroq urinib ko'ring.",
+    "loginFailed": "Kirish amalga oshmadi. Qayta urinib ko'ring.",
+    "networkError": "Serverga ulanib bo'lmadi. U ishlayaptimi?"
   },
   "nav": {
     "dashboard": "Boshqaruv paneli",
