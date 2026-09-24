@@ -32,7 +32,7 @@ export function LeadPoolPage() {
       await api.post(`/api/leads/${id}/take`);
       setLeads((prev) => prev.filter((l) => l.id !== id));
     } catch {
-      setMsg('Someone else already took this lead');
+      setMsg(t('err.alreadyTaken'));
       load();
     }
   }

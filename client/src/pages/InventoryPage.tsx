@@ -161,7 +161,7 @@ function AddVehicleModal({ onClose, onSaved }: { onClose: () => void; onSaved: (
       });
       onSaved();
     } catch (err) {
-      setError(err instanceof Error && err.message === 'VIN_TAKEN' ? 'VIN already exists' : 'Failed');
+      setError(err instanceof Error && err.message === 'VIN_TAKEN' ? t('err.vinTaken') : t('err.generic'));
     } finally {
       setBusy(false);
     }

@@ -50,7 +50,7 @@ export function SellModal({ vehicle, onClose, onSaved }: { vehicle: Vehicle; onC
       });
       onSaved();
     } catch {
-      setError('Failed');
+      setError(t('err.generic'));
     } finally {
       setBusy(false);
     }

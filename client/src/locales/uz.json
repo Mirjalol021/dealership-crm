@@ -54,7 +54,8 @@
     "SALES_MANAGER": "Sotuv menejeri",
     "CALL_CENTER": "Call-markaz",
     "SERVICE_STAFF": "Servis xodimi",
-    "FINANCE": "Moliya"
+    "FINANCE": "Moliya",
+    "role": "Rol"
   },
   "settings": {
     "title": "Sozlamalar",
@@ -157,7 +158,8 @@
     "existingCustomer": "Mavjud mijoz topildi — yangi lid unga bog'landi",
     "campaign": "Kampaniya",
     "followUpRequired": "Qayta aloqa sanasini belgilang",
-    "formAnswers": "Forma javoblari"
+    "formAnswers": "Forma javoblari",
+    "open": "Ochish"
   },
   "pipelineStatus": {
     "NEW": "Yangi",
@@ -405,7 +407,8 @@
     "bySourceLabel": "Manba bo'yicha",
     "leadsLabel": "Lidlar",
     "visitsLabel": "Tashriflar",
-    "soldLabel": "Sotildi"
+    "soldLabel": "Sotildi",
+    "exportProblems": "Xatolarni yuklab olish (CSV)"
   },
   "dash": {
     "newToday": "Bugun yangi lidlar",
@@ -455,5 +458,26 @@
     "TEST_DRIVE_COMPLETED": "Test-drayv",
     "SOLD": "Sotildi",
     "LOST": "Yo'qotildi"
+  },
+  "sec": {
+    "pipelineStatus": "Bosqichlar",
+    "leadResult": "Natijalar",
+    "pipelineByManager": "Menejer bo'yicha bosqichlar",
+    "resultByManager": "Menejer bo'yicha natijalar"
+  },
+  "err": {
+    "loadFailed": "Yuklab bo'lmadi",
+    "saveFailed": "Saqlab bo'lmadi",
+    "vinTaken": "VIN allaqachon mavjud",
+    "alreadyTaken": "Boshqa xodim bu lidni oldi",
+    "generic": "Xatolik yuz berdi",
+    "emailTaken": "Email allaqachon ro'yxatdan o'tgan"
+  },
+  "appt": {
+    "date": "Sana",
+    "status": "Holat",
+    "PLANNED": "Rejalashtirilgan",
+    "ARRIVED": "Keldi",
+    "NO_SHOW": "Kelmadi"
   }
 }

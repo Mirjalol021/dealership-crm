@@ -117,7 +117,7 @@ function LeadProcessor({
       onSaved();
       onRefreshList();
     } catch {
-      setError('Failed to save');
+      setError(t('err.saveFailed'));
     } finally {
       setBusy(false);
     }

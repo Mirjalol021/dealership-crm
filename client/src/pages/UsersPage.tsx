@@ -47,7 +47,7 @@ export function UsersPage() {
       setBrands(b.brands);
       setDealerships(d.dealerships);
     } catch {
-      setError('Failed to load users');
+      setError(t('err.loadFailed'));
     }
   }
 
@@ -98,7 +98,7 @@ export function UsersPage() {
       setForm({ ...EMPTY_FORM });
       load();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed');
+      setError(err instanceof Error && err.message === 'EMAIL_TAKEN' ? t('err.emailTaken') : t('err.generic'));
     } finally {
       setBusy(false);
     }
@@ -125,7 +125,7 @@ export function UsersPage() {
             <tr>
               <th>{t('settings.name')}</th>
               <th>{t('auth.email')}</th>
-              <th>Role</th>
+              <th>{t('roles.role')}</th>
               <th>{t('settings.scope')}</th>
               <th>{t('settings.active')}</th>
               <th></th>

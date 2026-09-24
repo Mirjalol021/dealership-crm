@@ -54,7 +54,8 @@
     "SALES_MANAGER": "Sales Manager",
     "CALL_CENTER": "Call Center",
     "SERVICE_STAFF": "Service Staff",
-    "FINANCE": "Finance"
+    "FINANCE": "Finance",
+    "role": "Role"
   },
   "settings": {
     "title": "Settings",
@@ -157,7 +158,8 @@
     "existingCustomer": "Existing customer found — new lead linked to it",
     "campaign": "Campaign",
     "followUpRequired": "Please set a follow-up date",
-    "formAnswers": "Form answers"
+    "formAnswers": "Form answers",
+    "open": "Open"
   },
   "pipelineStatus": {
     "NEW": "New",
@@ -405,7 +407,8 @@
     "bySourceLabel": "By Source",
     "leadsLabel": "Leads",
     "visitsLabel": "Visits",
-    "soldLabel": "Sold"
+    "soldLabel": "Sold",
+    "exportProblems": "Export problems (CSV)"
   },
   "dash": {
     "newToday": "New Leads Today",
@@ -455,5 +458,26 @@
     "TEST_DRIVE_COMPLETED": "Test drive completed",
     "SOLD": "Sold",
     "LOST": "Lost"
+  },
+  "sec": {
+    "pipelineStatus": "Pipeline Status",
+    "leadResult": "Lead Result",
+    "pipelineByManager": "Pipeline Status by Manager",
+    "resultByManager": "Lead Result by Manager"
+  },
+  "err": {
+    "loadFailed": "Failed to load",
+    "saveFailed": "Failed to save",
+    "vinTaken": "VIN already exists",
+    "alreadyTaken": "Someone else already took this lead",
+    "generic": "Something went wrong",
+    "emailTaken": "Email already registered"
+  },
+  "appt": {
+    "date": "Date",
+    "status": "Status",
+    "PLANNED": "Planned",
+    "ARRIVED": "Arrived",
+    "NO_SHOW": "No Show"
   }
 }

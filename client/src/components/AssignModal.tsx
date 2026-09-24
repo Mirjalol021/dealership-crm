@@ -42,7 +42,7 @@ export function AssignModal({
       await api.post(`/api/leads/${leadId}/assign`, { toUserId, priority });
       onDone();
     } catch {
-      setError('Failed');
+      setError(t('err.generic'));
     } finally {
       setBusy(false);
     }

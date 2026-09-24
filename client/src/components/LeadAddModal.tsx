@@ -48,7 +48,7 @@ export function LeadAddModal({ onClose, onCreated }: { onClose: () => void; onCr
         onCreated();
       }
     } catch {
-      setError('Failed');
+      setError(t('err.generic'));
     } finally {
       setBusy(false);
     }

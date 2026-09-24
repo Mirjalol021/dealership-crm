@@ -55,6 +55,18 @@ export function ImportPage() {
     reader.readAsText(file);
   }
 
+  function exportProblems() {
+    const problems = preview.filter((p) => p.status !== 'valid');
+    const csv = ['row,status,reason', ...problems.map((p) => `${p.row},${p.status},"${(p.reason ?? '').replace(/"/g, '""')}"`)].join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `import-problems-${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   async function send(confirm: boolean) {
     setBusy(true);
     setMessage('');
@@ -115,11 +127,16 @@ export function ImportPage() {
             </tbody>
           </table>
 
-          {counts.valid > 0 && (
-            <button className="btn-primary inline" style={{ marginTop: 12 }} onClick={() => send(true)} disabled={busy}>
-              {t('rep.confirmImport')} ({counts.valid})
-            </button>
-          )}
+          <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
+            {counts.valid > 0 && (
+              <button className="btn-primary inline" onClick={() => send(true)} disabled={busy}>
+                {t('rep.confirmImport')} ({counts.valid})
+              </button>
+            )}
+            {(counts.invalid > 0 || counts.duplicate > 0) && (
+              <button className="btn-ghost" onClick={() => exportProblems()}>{t('rep.exportProblems')}</button>
+            )}
+          </div>
         </div>
       )}
       {message && <div className="ok-msg" style={{ marginTop: 12 }}>{message}</div>}

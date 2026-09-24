@@ -1,5 +1,6 @@
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { navForRole } from '../lib/navigation';
 import { LanguageSwitcher } from './LanguageSwitcher';
@@ -8,9 +9,19 @@ export function Layout() {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const items = user ? navForRole(user.role) : [];
+
+  useEffect(() => {
+    const item = items.find((i) => i.path === location.pathname);
+    const label = item ? t(`nav.${item.labelKey}`) : t('app.name');
+    document.title = `${label} · ${t('app.name')}`;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname, user?.role]);
 
   if (!user) return null;
-  const items = navForRole(user.role);
 
   async function handleLogout() {
     await logout();
@@ -18,7 +29,17 @@ export function Layout() {
   }
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell${menuOpen ? ' menu-open' : ''}`}>
+      <button
+        className="menu-toggle"
+        aria-label="Menu"
+        onClick={() => setMenuOpen((o) => !o)}
+      >
+        ☰
+      </button>
+
+      {menuOpen && <div className="sidebar-scrim" onClick={() => setMenuOpen(false)} />}
+
       <aside className="sidebar">
         <div className="brand">
           <span className="brand-mark">CRM</span>
@@ -31,6 +52,7 @@ export function Layout() {
               to={item.path}
               className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}
               end={item.path === '/'}
+              onClick={() => setMenuOpen(false)}
             >
               {t(`nav.${item.labelKey}`)}
             </NavLink>

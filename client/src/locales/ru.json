@@ -54,7 +54,8 @@
     "SALES_MANAGER": "Менеджер по продажам",
     "CALL_CENTER": "Колл-центр",
     "SERVICE_STAFF": "Сервисный персонал",
-    "FINANCE": "Финансы"
+    "FINANCE": "Финансы",
+    "role": "Роль"
   },
   "settings": {
     "title": "Настройки",
@@ -157,7 +158,8 @@
     "existingCustomer": "Существующий клиент найден — новый лид привязан к нему",
     "campaign": "Кампания",
     "followUpRequired": "Укажите дату повторного звонка",
-    "formAnswers": "Ответы формы"
+    "formAnswers": "Ответы формы",
+    "open": "Открыть"
   },
   "pipelineStatus": {
     "NEW": "Новый",
@@ -405,7 +407,8 @@
     "bySourceLabel": "По источнику",
     "leadsLabel": "Лиды",
     "visitsLabel": "Визиты",
-    "soldLabel": "Продано"
+    "soldLabel": "Продано",
+    "exportProblems": "Экспорт ошибок (CSV)"
   },
   "dash": {
     "newToday": "Новые лиды сегодня",
@@ -455,5 +458,26 @@
     "TEST_DRIVE_COMPLETED": "Тест-драйв",
     "SOLD": "Продано",
     "LOST": "Потеряно"
+  },
+  "sec": {
+    "pipelineStatus": "Этапы",
+    "leadResult": "Результаты",
+    "pipelineByManager": "Этапы по менеджерам",
+    "resultByManager": "Результаты по менеджерам"
+  },
+  "err": {
+    "loadFailed": "Не удалось загрузить",
+    "saveFailed": "Не удалось сохранить",
+    "vinTaken": "VIN уже существует",
+    "alreadyTaken": "Кто-то уже взял этот лид",
+    "generic": "Что-то пошло не так",
+    "emailTaken": "Email уже зарегистрирован"
+  },
+  "appt": {
+    "date": "Дата",
+    "status": "Статус",
+    "PLANNED": "Запланирован",
+    "ARRIVED": "Пришёл",
+    "NO_SHOW": "Не пришёл"
   }
 }

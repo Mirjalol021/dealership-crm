@@ -22,7 +22,7 @@ export function SettingsPage() {
       setBrands(b.brands);
       setDealerships(d.dealerships);
     } catch {
-      setError('Failed to load settings');
+      setError(t('err.loadFailed'));
     }
   }
 

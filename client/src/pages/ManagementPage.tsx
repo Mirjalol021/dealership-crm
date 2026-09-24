@@ -79,7 +79,7 @@ export function ManagementPage() {
         managers={pipeline.table}
       />
 
-      <h2 className="section-title">Pipeline Status</h2>
+      <h2 className="section-title">{t('sec.pipelineStatus')}</h2>
       <div className="table-scroll">
         <table className="table">
           <thead>
@@ -107,7 +107,7 @@ export function ManagementPage() {
         </table>
       </div>
 
-      <h2 className="section-title">Lead Result</h2>
+      <h2 className="section-title">{t('sec.leadResult')}</h2>
       <div className="table-scroll">
         <table className="table">
           <thead>

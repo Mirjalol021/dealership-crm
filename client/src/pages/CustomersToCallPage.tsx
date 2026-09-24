@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
 import type { CustomerToCall } from '../lib/aftersalesTypes';
+import { NewVisitModal } from './ServiceVisitsPage';
+import { useAuth } from '../lib/auth';
 
 // §44 Customer to Call filters.
 const BUCKETS: { key: string; i18n: string; pill: string }[] = [
@@ -22,6 +24,9 @@ export function CustomersToCallPage() {
   const { t } = useTranslation();
   const [customers, setCustomers] = useState<CustomerToCall[]>([]);
   const [bucket, setBucket] = useState<string>('');
+  const [visitCarId, setVisitCarId] = useState<string | null>(null);
+  const { can } = useAuth();
+  const canManage = can('aftersales.manage');
 
   async function load() {
     const q = bucket ? `?bucket=${bucket}` : '';
@@ -57,6 +62,7 @@ export function CustomersToCallPage() {
               <th>{t('as.mileage')}</th>
               <th>{t('as.nextService')}</th>
               <th></th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -74,15 +80,28 @@ export function CustomersToCallPage() {
                   </td>
                   <td>{c.nextServiceDate ? new Date(c.nextServiceDate).toLocaleDateString() : '—'}</td>
                   <td><span className={`pill ${meta.cls}`}>{t(`as.${meta.i18n}`)}</span></td>
+                  <td>
+                    {canManage && (
+                      <button className="btn-primary sm" onClick={() => setVisitCarId(c.soldCarId)}>{t('as.newVisit')}</button>
+                    )}
+                  </td>
                 </tr>
               );
             })}
             {customers.length === 0 && (
-              <tr><td colSpan={7} className="muted" style={{ textAlign: 'center', padding: 24 }}>—</td></tr>
+              <tr><td colSpan={8} className="muted" style={{ textAlign: 'center', padding: 24 }}>—</td></tr>
             )}
           </tbody>
         </table>
       </div>
+
+      {visitCarId && (
+        <NewVisitModal
+          initialCarId={visitCarId}
+          onClose={() => setVisitCarId(null)}
+          onSaved={() => { setVisitCarId(null); load(); }}
+        />
+      )}
     </div>
   );
 }

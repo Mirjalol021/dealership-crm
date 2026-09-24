@@ -31,7 +31,7 @@ export function ServiceVisitsPage() {
         <table className="table">
           <thead>
             <tr>
-              <th>Date</th>
+              <th>{t('appt.date')}</th>
               <th>{t('lead.customer')}</th>
               <th>{t('lead.brand')}</th>
               <th className="mono">{t('veh.vin')}</th>
@@ -66,7 +66,7 @@ export function ServiceVisitsPage() {
   );
 }
 
-function NewVisitModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+export function NewVisitModal({ onClose, onSaved, initialCarId }: { onClose: () => void; onSaved: () => void; initialCarId?: string }) {
   const { t } = useTranslation();
   const [cars, setCars] = useState<AsSoldCar[]>([]);
   const [items, setItems] = useState<AsItem[]>([]);
@@ -87,7 +87,7 @@ function NewVisitModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
     ]).then(([c, i]) => {
       setCars(c.cars);
       setItems(i.items);
-      if (c.cars[0]) setSoldCarId(c.cars[0].id);
+      setSoldCarId(initialCarId ?? c.cars[0]?.id ?? '');
     });
   }, []);
 
@@ -160,7 +160,7 @@ function NewVisitModal({ onClose, onSaved }: { onClose: () => void; onSaved: () 
         </fieldset>
 
         <label>{t('as.nextService')} — {t('as.mileage')}<input type="number" value={nextMileage} onChange={(e) => setNextMileage(e.target.value)} /></label>
-        <label>{t('as.nextService')} — Date<input type="date" value={nextDate} onChange={(e) => setNextDate(e.target.value)} /></label>
+        <label>{t('as.nextService')} — {t('appt.date')}<input type="date" value={nextDate} onChange={(e) => setNextDate(e.target.value)} /></label>
 
         <div className="modal-actions">
           <button className="btn-ghost" onClick={onClose}>{t('lead.cancel')}</button>

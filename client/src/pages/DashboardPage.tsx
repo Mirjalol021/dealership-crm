@@ -86,7 +86,7 @@ export function DashboardPage() {
       {/* Pipeline by manager (§69, §70) — hidden for Sales Manager */}
       {!isManager && data.pipelineTable.length > 0 && (
         <>
-          <h2 className="section-title">Pipeline Status by Manager</h2>
+          <h2 className="section-title">{t('sec.pipelineByManager')}</h2>
           <div className="table-scroll">
             <table className="table">
               <thead><tr><th>{t('lead.manager')}</th>{PIPELINE_COLS.map((s) => <th key={s}>{t(`pipelineStatus.${s}`)}</th>)}</tr></thead>
