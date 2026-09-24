@@ -31,7 +31,8 @@ const updateSchema = z.object({
 
 function vehicleCard(v: {
   id: string; model: string; trim: string | null; color: string | null; vin: string;
-  arrivalDate: Date; sellingPrice: unknown; status: string; notes: string | null;
+  arrivalDate: Date; reservedAt: Date | null; soldAt: Date | null;
+  sellingPrice: unknown; status: string; notes: string | null;
   brand: { name: string }; dealership: { dealershipName: string; cityRegion: string };
 }) {
   return {
@@ -41,6 +42,8 @@ function vehicleCard(v: {
     color: v.color,
     vin: v.vin,
     arrivalDate: v.arrivalDate,
+    reservedAt: v.reservedAt,
+    soldAt: v.soldAt,
     sellingPrice: v.sellingPrice != null ? Number(v.sellingPrice) : null,
     status: v.status,
     notes: v.notes,
@@ -120,9 +123,15 @@ export async function inventoryRoutes(app: FastifyInstance): Promise<void> {
     if (!parsed.success) return reply.code(400).send({ error: 'INVALID_INPUT', details: parsed.error.flatten() });
     const { arrivalDate, ...rest } = parsed.data;
 
+    // Keep status timestamps consistent with a manual status change (§74).
+    const statusData: Record<string, Date | null> = {};
+    if (rest.status === 'RESERVED') statusData.reservedAt = new Date();
+    if (rest.status === 'SOLD') statusData.soldAt = new Date();
+    if (rest.status === 'AVAILABLE') { statusData.reservedAt = null; statusData.soldAt = null; }
+
     const vehicle = await prisma.inventoryVehicle.update({
       where: { id },
-      data: { ...rest, ...(arrivalDate ? { arrivalDate: new Date(arrivalDate) } : {}) },
+      data: { ...rest, ...statusData, ...(arrivalDate ? { arrivalDate: new Date(arrivalDate) } : {}) },
       include: { brand: true, dealership: true },
     });
     return reply.send({ vehicle: vehicleCard(vehicle) });

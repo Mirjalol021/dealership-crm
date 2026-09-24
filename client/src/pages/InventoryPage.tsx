@@ -81,7 +81,15 @@ export function InventoryPage() {
                 <td>{v.color ?? '—'}</td>
                 <td className="mono">{v.vin}</td>
                 <td>{v.sellingPrice != null ? v.sellingPrice.toLocaleString() : '—'}</td>
-                <td><VehiclePill status={v.status} /></td>
+                <td>
+                  <VehiclePill status={v.status} />
+                  {v.status === 'RESERVED' && v.reservedAt && (
+                    <div className="muted small">{new Date(v.reservedAt).toLocaleDateString()}</div>
+                  )}
+                  {v.status === 'SOLD' && v.soldAt && (
+                    <div className="muted small">{new Date(v.soldAt).toLocaleDateString()}</div>
+                  )}
+                </td>
                 <td className="actions-cell">
                   {v.status === 'AVAILABLE' && canSell && (
                     <>

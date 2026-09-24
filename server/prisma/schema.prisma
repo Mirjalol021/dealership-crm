@@ -517,6 +517,8 @@ model InventoryVehicle {
   color        String?
   vin          String        @unique
   arrivalDate  DateTime      @default(now())
+  reservedAt   DateTime?     // when it was reserved (§74)
+  soldAt       DateTime?     // when it was sold (§74)
   sellingPrice Decimal?      @db.Decimal(14, 2)
   status       VehicleStatus @default(AVAILABLE)
   notes        String?

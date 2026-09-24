@@ -75,7 +75,7 @@ export async function reservationRoutes(app: FastifyInstance): Promise<void> {
       // Atomic guard: only one concurrent request can flip AVAILABLE -> RESERVED (§28).
       const flipped = await tx.inventoryVehicle.updateMany({
         where: { id: d.vehicleId, status: 'AVAILABLE' },
-        data: { status: 'RESERVED' },
+        data: { status: 'RESERVED', reservedAt: new Date() },
       });
       if (flipped.count === 0) return null;
 
@@ -116,7 +116,7 @@ export async function reservationRoutes(app: FastifyInstance): Promise<void> {
       await tx.vehicleReservation.delete({ where: { id } });
       await tx.inventoryVehicle.update({
         where: { id: reservation.vehicleId },
-        data: { status: 'AVAILABLE' },
+        data: { status: 'AVAILABLE', reservedAt: null },
       });
     });
     return reply.send({ ok: true });

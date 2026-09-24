@@ -370,6 +370,8 @@ export async function afterSalesRoutes(app: FastifyInstance): Promise<void> {
 
     const now = new Date();
     const soon = new Date(now.getTime() + 30 * 86400000);
+    // Mileage Due threshold: within 10% of the target, or already past it (§44).
+    const MILEAGE_DUE_RATIO = 0.9;
 
     const cars = await prisma.soldCar.findMany({
       where,
@@ -379,10 +381,24 @@ export async function afterSalesRoutes(app: FastifyInstance): Promise<void> {
     const rows = cars
       .map((c) => {
         const hasVisits = c.serviceVisits.length > 0;
+
+        // Mileage Due (§44): the scheduled mileage is known and the car has reached
+        // (or nearly reached) it. Compared by odometer, independent of dates.
+        let mileageDue = false;
+        if (c.nextServiceMileage != null && c.currentMileage != null && c.nextServiceMileage > 0) {
+          const covered = c.currentMileage / c.nextServiceMileage;
+          mileageDue = covered >= MILEAGE_DUE_RATIO;
+        }
+
+        // Bucket priority: OVERDUE > DUE_SOON > MILEAGE_DUE > NEVER_SERVICED > OK (§44).
         let bucket = 'OK';
-        if (!hasVisits && !c.nextServiceDate) bucket = 'NEVER_SERVICED';
+        if (!hasVisits && !c.nextServiceDate && !(c.nextServiceMileage != null)) {
+          bucket = 'NEVER_SERVICED';
+        }
+        if (mileageDue) bucket = 'MILEAGE_DUE';
+        if (c.nextServiceDate && c.nextServiceDate <= soon) bucket = 'DUE_SOON';
         if (c.nextServiceDate && c.nextServiceDate < now) bucket = 'OVERDUE';
-        else if (c.nextServiceDate && c.nextServiceDate <= soon) bucket = 'DUE_SOON';
+
         return {
           soldCarId: c.id,
           customerName: c.customer.name,

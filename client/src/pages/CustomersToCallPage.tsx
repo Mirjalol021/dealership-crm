@@ -3,7 +3,20 @@ import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
 import type { CustomerToCall } from '../lib/aftersalesTypes';
 
-const BUCKETS = ['DUE_SOON', 'OVERDUE', 'NEVER_SERVICED'] as const;
+// §44 Customer to Call filters.
+const BUCKETS: { key: string; i18n: string; pill: string }[] = [
+  { key: 'DUE_SOON', i18n: 'dueSoon', pill: 'pill-visit-planned' },
+  { key: 'OVERDUE', i18n: 'overdue', pill: 'pill-lost' },
+  { key: 'MILEAGE_DUE', i18n: 'mileageDue', pill: 'pill-new' },
+  { key: 'NEVER_SERVICED', i18n: 'neverServiced', pill: 'pill-new' },
+];
+
+const PILL: Record<string, { i18n: string; cls: string }> = {
+  DUE_SOON: { i18n: 'dueSoon', cls: 'pill-visit-planned' },
+  OVERDUE: { i18n: 'overdue', cls: 'pill-lost' },
+  MILEAGE_DUE: { i18n: 'mileageDue', cls: 'pill-new' },
+  NEVER_SERVICED: { i18n: 'neverServiced', cls: 'pill-new' },
+};
 
 export function CustomersToCallPage() {
   const { t } = useTranslation();
@@ -27,8 +40,8 @@ export function CustomersToCallPage() {
       <div className="chips">
         <button className={`chip${bucket === '' ? ' active' : ''}`} onClick={() => setBucket('')}>{t('lead.all')}</button>
         {BUCKETS.map((b) => (
-          <button key={b} className={`chip${bucket === b ? ' active' : ''}`} onClick={() => setBucket(b)}>
-            {t(`as.${b === 'DUE_SOON' ? 'dueSoon' : b === 'OVERDUE' ? 'overdue' : 'neverServiced'}`)}
+          <button key={b.key} className={`chip${bucket === b.key ? ' active' : ''}`} onClick={() => setBucket(b.key)}>
+            {t(`as.${b.i18n}`)}
           </button>
         ))}
       </div>
@@ -47,17 +60,23 @@ export function CustomersToCallPage() {
             </tr>
           </thead>
           <tbody>
-            {customers.map((c) => (
-              <tr key={c.soldCarId}>
-                <td>{c.customerName ?? c.phone}</td>
-                <td><a className="phone-link" href={`tel:${c.phone}`}>{c.phone}</a></td>
-                <td>{c.brand} {c.model}</td>
-                <td className="mono">{c.vin}</td>
-                <td>{c.currentMileage?.toLocaleString() ?? '—'}</td>
-                <td>{c.nextServiceDate ? new Date(c.nextServiceDate).toLocaleDateString() : '—'}</td>
-                <td><span className={`pill ${c.bucket === 'OVERDUE' ? 'pill-lost' : c.bucket === 'DUE_SOON' ? 'pill-visit-planned' : 'pill-new'}`}>{t(`as.${c.bucket === 'DUE_SOON' ? 'dueSoon' : c.bucket === 'OVERDUE' ? 'overdue' : 'neverServiced'}`)}</span></td>
-              </tr>
-            ))}
+            {customers.map((c) => {
+              const meta = PILL[c.bucket] ?? { i18n: 'neverServiced', cls: 'pill-new' };
+              return (
+                <tr key={c.soldCarId}>
+                  <td>{c.customerName ?? c.phone}</td>
+                  <td><a className="phone-link" href={`tel:${c.phone}`}>{c.phone}</a></td>
+                  <td>{c.brand} {c.model}</td>
+                  <td className="mono">{c.vin}</td>
+                  <td>
+                    {c.currentMileage?.toLocaleString() ?? '—'}
+                    {c.nextServiceMileage != null && <span className="muted small"> / {c.nextServiceMileage.toLocaleString()}</span>}
+                  </td>
+                  <td>{c.nextServiceDate ? new Date(c.nextServiceDate).toLocaleDateString() : '—'}</td>
+                  <td><span className={`pill ${meta.cls}`}>{t(`as.${meta.i18n}`)}</span></td>
+                </tr>
+              );
+            })}
             {customers.length === 0 && (
               <tr><td colSpan={7} className="muted" style={{ textAlign: 'center', padding: 24 }}>—</td></tr>
             )}

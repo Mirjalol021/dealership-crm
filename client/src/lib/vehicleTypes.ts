@@ -11,6 +11,8 @@ export interface Vehicle {
   color: string | null;
   vin: string;
   arrivalDate: string;
+  reservedAt: string | null;
+  soldAt: string | null;
   sellingPrice: number | null;
   status: VehicleStatus;
   notes: string | null;

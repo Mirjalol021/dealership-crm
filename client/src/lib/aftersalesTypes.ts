@@ -50,7 +50,7 @@ export interface CustomerToCall {
   lastServiceDate: string | null;
   nextServiceDate: string | null;
   nextServiceMileage: number | null;
-  bucket: 'DUE_SOON' | 'OVERDUE' | 'NEVER_SERVICED' | 'OK';
+  bucket: 'DUE_SOON' | 'OVERDUE' | 'MILEAGE_DUE' | 'NEVER_SERVICED' | 'OK';
   serviceCount: number;
 }
 

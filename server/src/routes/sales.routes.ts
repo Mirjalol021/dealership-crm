@@ -146,7 +146,7 @@ export async function salesRoutes(app: FastifyInstance): Promise<void> {
       if (d.vehicleId) {
         const claimed = await tx.inventoryVehicle.updateMany({
           where: { id: d.vehicleId, status: { not: 'SOLD' } },
-          data: { status: 'SOLD' },
+          data: { status: 'SOLD', soldAt: d.saleDate ? new Date(d.saleDate) : new Date() },
         });
         if (claimed.count === 0) throw new Error('VEHICLE_ALREADY_SOLD');
         await tx.vehicleReservation.deleteMany({ where: { vehicleId: d.vehicleId } });

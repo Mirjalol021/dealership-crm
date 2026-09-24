@@ -323,7 +323,8 @@
     "otherConsumables": "Boshqa sarf",
     "piece": "Dona",
     "liter": "Litr",
-    "set": "To'plam"
+    "set": "To'plam",
+    "mileageDue": "Yurish bo'yicha"
   },
   "rep": {
     "salesReport": "Sotuv hisoboti",

@@ -323,7 +323,8 @@
     "otherConsumables": "Прочее",
     "piece": "Штука",
     "liter": "Литр",
-    "set": "Комплект"
+    "set": "Комплект",
+    "mileageDue": "По пробегу"
   },
   "rep": {
     "salesReport": "Отчёт продаж",

@@ -323,7 +323,8 @@
     "otherConsumables": "Other Consumables",
     "piece": "Piece",
     "liter": "Liter",
-    "set": "Set"
+    "set": "Set",
+    "mileageDue": "Mileage Due"
   },
   "rep": {
     "salesReport": "Sales Report",
