@@ -142,9 +142,13 @@ export async function salesRoutes(app: FastifyInstance): Promise<void> {
     const sale = await prisma.$transaction(async (tx) => {
       const { customerId } = await findOrCreateCustomer(tx, normalized, d.customerName ?? null);
 
-      // If a vehicle is linked, mark it SOLD and consume any reservation.
+      // If a vehicle is linked, atomically claim it (cannot sell a SOLD/foreign car twice).
       if (d.vehicleId) {
-        await tx.inventoryVehicle.update({ where: { id: d.vehicleId }, data: { status: 'SOLD' } });
+        const claimed = await tx.inventoryVehicle.updateMany({
+          where: { id: d.vehicleId, status: { not: 'SOLD' } },
+          data: { status: 'SOLD' },
+        });
+        if (claimed.count === 0) throw new Error('VEHICLE_ALREADY_SOLD');
         await tx.vehicleReservation.deleteMany({ where: { vehicleId: d.vehicleId } });
       }
 

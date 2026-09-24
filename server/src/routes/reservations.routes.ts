@@ -72,8 +72,14 @@ export async function reservationRoutes(app: FastifyInstance): Promise<void> {
 
     const normalized = normalizePhone(d.phone);
     const reservation = await prisma.$transaction(async (tx) => {
+      // Atomic guard: only one concurrent request can flip AVAILABLE -> RESERVED (§28).
+      const flipped = await tx.inventoryVehicle.updateMany({
+        where: { id: d.vehicleId, status: 'AVAILABLE' },
+        data: { status: 'RESERVED' },
+      });
+      if (flipped.count === 0) return null;
+
       const { customerId } = await findOrCreateCustomer(tx, normalized, d.customerName ?? null);
-      await tx.inventoryVehicle.update({ where: { id: d.vehicleId }, data: { status: 'RESERVED' } });
       return tx.vehicleReservation.create({
         data: {
           vehicleId: d.vehicleId,
@@ -94,6 +100,7 @@ export async function reservationRoutes(app: FastifyInstance): Promise<void> {
         },
       });
     });
+    if (!reservation) return reply.code(409).send({ error: 'VEHICLE_NOT_AVAILABLE' });
     return reply.code(201).send({ reservation: resCard(reservation) });
   });
 

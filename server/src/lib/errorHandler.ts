@@ -9,6 +9,12 @@ export function registerErrorHandler(app: FastifyInstance): void {
   });
 
   app.setErrorHandler((err, req, reply) => {
+    // Domain guard errors thrown inside transactions -> 409 Conflict.
+    const knownConflicts = ['VEHICLE_ALREADY_SOLD'];
+    if (knownConflicts.includes(err.message)) {
+      return reply.code(409).send({ error: err.message });
+    }
+
     // Body/validation errors from Fastify content-type parsers.
     if ((err as { statusCode?: number }).statusCode === 400) {
       return reply.code(400).send({ error: 'BAD_REQUEST', message: err.message });

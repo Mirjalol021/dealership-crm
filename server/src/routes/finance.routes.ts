@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../db.js';
 import { requirePermission } from '../auth/guard.js';
 import {
-  vehicleContribution, netResult, monthKey, type TaxSettings,
+  vehicleContribution, netResult, monthKey, serviceContribution as computeServiceContribution, type TaxSettings,
 } from '../lib/finance.js';
 import { scopeWhere } from '../auth/scope.js';
 
@@ -273,9 +273,20 @@ export async function financeRoutes(app: FastifyInstance): Promise<void> {
     const variableExpenses = expenses.filter((e) => e.expenseType === 'VARIABLE').reduce((s, e) => s + Number(e.amount), 0);
     const totalExpenses = fixedExpenses + variableExpenses;
 
-    // Service revenue/contribution arrive in Phase 5; kept at 0 here.
-    const serviceRevenue = 0;
-    const serviceContributionTotal = 0;
+    // Service visits for the month (§43, §51). Profit View → by serviceDate;
+    // Cash Flow → by paymentDate (money actually received).
+    const svcDateFilter = view === 'profit'
+      ? { serviceDate: { gte, lt } }
+      : { paymentDate: { gte, lt } };
+    const serviceVisits = await prisma.serviceVisit.findMany({
+      where: { ...svcDateFilter, ...brandFilter, ...dealershipFilter, ...scopeWhere(req.user!) },
+      include: { inventoryUsage: true },
+    });
+    const serviceRevenue = serviceVisits.reduce((s, v) => s + Number(v.serviceRevenue), 0);
+    const servicePartsCost = serviceVisits.reduce(
+      (s, v) => s + v.inventoryUsage.reduce((x, u) => x + Number(u.costSnapshot) * Number(u.quantity), 0), 0,
+    );
+    const serviceContributionTotal = computeServiceContribution(serviceRevenue, servicePartsCost);
 
     const net = netResult({
       vehicleContribution: vehicleContributionTotal,
@@ -292,6 +303,7 @@ export async function financeRoutes(app: FastifyInstance): Promise<void> {
         totalTurnover: round2(totalTurnover),
         vehicleMargin: round2(vehicleMargin),
         serviceRevenue,
+        serviceContribution: round2(serviceContributionTotal),
         vinBonuses: round2(vinBonusConfirmed),
         vinBonusesExpected: round2(vinBonusExpected),
         kpiBonuses: round2(kpiConfirmed),
