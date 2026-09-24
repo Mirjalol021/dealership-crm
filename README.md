@@ -1,7 +1,7 @@
 # Dealership CRM V2
 
-Simple, purpose-built dealership CRM. Source of truth: the master specification
-(see `docs/`).
+Purpose-built dealership CRM for multi-brand / multi-dealership operations.
+Source of truth: the master specification (see `docs/`).
 
 ## Stack
 
@@ -40,27 +40,50 @@ npm install
 npm run dev               # http://localhost:5173
 ```
 
+Or start both together from the repo root:
+
+```bash
+./start.sh
+```
+
 ## Default dev credentials
 
 - Super Admin: `admin@crm.local` / `admin12345`
+- (test) Head of Sales: `head@crm.local` / `head12345`
 - (test) Sales Manager: `manager@crm.local` / `manager123`
+- (test) Call Center: `callcenter@crm.local` / `call12345`
+- (test) Finance: `finance@crm.local` / `finance12345`
 
 > Change these before any real use.
 
+## Security & data-scoping notes
+
+- **Permissions** are enforced on the backend via `requirePermission` / `requireAnyPermission`
+  (`server/src/auth/permissions.ts`). Hiding UI is never sufficient.
+- **Data scoping** (`server/src/auth/scope.ts`): Super Admin is unrestricted; every other
+  role is bounded by the dealerships/brands granted to it. This applies to all read
+  and write routes.
+- **Login throttling**: repeated failures for an `ip|email` pair are blocked for a window
+  (`LOGIN_MAX_ATTEMPTS` / `LOGIN_WINDOW_MINUTES`).
+- **Meta webhook** payloads are validated with the `X-Hub-Signature-256` HMAC
+  (`appSecret` of the matching connector). Unsigned requests are rejected with 401.
+- **Production secrets**: the server refuses to boot if `SESSION_SECRET` is still the
+  default or shorter than 32 chars while `NODE_ENV=production`.
+- Configure `CORS_ORIGINS` (comma-separated) for production; dev allows any origin.
+
 ## Build status
 
-- [x] **Phase 1 — Foundation**
-  - [x] M1 — project scaffold, PostgreSQL, Prisma schema, Docker deferred
-  - [x] M2 — auth (session login/logout/me)
-  - [x] M3 — users + roles
-  - [x] M4 — brands CRUD
-  - [x] M5 — dealerships CRUD + brand links
-  - [x] M6 — user↔dealership / user↔brand access
-  - [x] M7 — backend permission middleware
-  - [ ] M8 — i18n scaffolding (UZ/RU/EN)
-  - [ ] M9 — navigation shell + role-based routing
-- [ ] Phase 2 — Leads
-- [ ] Phase 3 — Inventory + Sales
-- [ ] Phase 4 — Finance
-- [ ] Phase 5 — AfterSales
-- [ ] Phase 6 — Integrations + Reports
+- [x] **Phase 1 — Foundation**: scaffold, PostgreSQL, Prisma, auth (session), users + roles,
+      brands & dealerships CRUD, access links, permission middleware, i18n (UZ/RU/EN), nav shell.
+- [x] **Phase 2 — Leads**: pool (atomic take), assignment + history, today/Save&Next, pipeline,
+      results, follow-ups, comments, attempts, activity, appointments, kanban, management tables.
+- [x] **Phase 3 — Inventory + Sales**: vehicle inventory, reservations/zalog, sold cars, manual
+      margin, discounts, customer bonuses, VIN distributor bonuses (role-gated costs).
+- [x] **Phase 4 — Finance**: expenses (accounting month vs payment date), KPI bonuses, configurable
+      VAT, Vehicle Contribution, Profit/Cash Flow views, finance dashboard.
+- [x] **Phase 5 — AfterSales**: sold cars DB, customers to call, service visits, inventory,
+      stock receipts/usage/adjustments, anti-theft movement report, service contribution.
+- [x] **Phase 6 — Integrations + Reports**: Meta/Telegram webhooks, dynamic form answers +
+      field mapping, phone/external dedup, bulk import, CSV/XLSX export, report families.
+- [x] **Hardening pass**: backend data scoping, Meta HMAC verification, login throttling,
+      centralized error handling, atomic reservation/sale, service contribution in finance.
