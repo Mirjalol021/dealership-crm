@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
+import type { ReactNode } from 'react';
 import { useAuth } from './lib/auth';
 import { Layout } from './components/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -29,6 +30,11 @@ import { SalesPage } from './pages/SalesPage';
 import { ImportPage } from './pages/ImportPage';
 import { LeadFormsPage } from './pages/LeadFormsPage';
 
+// Wraps a page element with an optional capability gate (UX-level; backend enforces).
+function guarded(capability: string, node: ReactNode) {
+  return <ProtectedRoute capability={capability}>{node}</ProtectedRoute>;
+}
+
 function Home() {
   const { user } = useAuth();
   if (!user) return null;
@@ -48,35 +54,35 @@ export function App() {
         }
       >
         <Route path="/" element={<Home />} />
-        <Route path="/today" element={<TodayPage />} />
-        <Route path="/leads" element={<KanbanPage />} />
-        <Route path="/kanban" element={<KanbanPage />} />
-        <Route path="/lead-pool" element={<LeadPoolPage />} />
-        <Route path="/my-leads" element={<MyLeadsPage />} />
-        <Route path="/new-leads" element={<MyLeadsPage />} />
-        <Route path="/follow-ups" element={<MyLeadsPage />} />
-        <Route path="/qualified" element={<LeadPoolPage />} />
+        <Route path="/today" element={guarded('leads.view.own', <TodayPage />)} />
+        <Route path="/leads" element={guarded('leads.view.own', <KanbanPage />)} />
+        <Route path="/kanban" element={guarded('leads.view.own', <KanbanPage />)} />
+        <Route path="/lead-pool" element={guarded('leads.take', <LeadPoolPage />)} />
+        <Route path="/my-leads" element={guarded('leads.view.own', <MyLeadsPage />)} />
+        <Route path="/new-leads" element={guarded('leads.view.own', <MyLeadsPage />)} />
+        <Route path="/follow-ups" element={guarded('leads.view.own', <MyLeadsPage />)} />
+        <Route path="/qualified" element={guarded('leads.assign', <LeadPoolPage />)} />
         <Route path="/appointments" element={<AppointmentsPage />} />
-        <Route path="/management" element={<ManagementPage />} />
-        <Route path="/inventory" element={<InventoryPage />} />
-        <Route path="/reservations" element={<ReservationsPage />} />
-        <Route path="/sales" element={<SalesPage />} />
-        <Route path="/sold-cars" element={<SoldCarsPage />} />
-        <Route path="/aftersales" element={<AfterSalesSoldCarsPage />} />
-        <Route path="/aftersales/inventory" element={<AfterSalesInventoryPage />} />
-        <Route path="/aftersales/stock-movements" element={<StockMovementsPage />} />
-        <Route path="/customers-to-call" element={<CustomersToCallPage />} />
-        <Route path="/service-visits" element={<ServiceVisitsPage />} />
-        <Route path="/finance" element={<FinanceDashboardPage />} />
-        <Route path="/expenses" element={<ExpensesPage />} />
-        <Route path="/sold-cars-finance" element={<SoldCarsPage />} />
-        <Route path="/distributor-bonuses" element={<KpiBonusesPage />} />
-        <Route path="/finance/settings" element={<FinanceSettingsPage />} />
+        <Route path="/management" element={guarded('leads.view.all', <ManagementPage />)} />
+        <Route path="/inventory" element={guarded('inventory.view', <InventoryPage />)} />
+        <Route path="/reservations" element={guarded('sales.view', <ReservationsPage />)} />
+        <Route path="/sales" element={guarded('sales.view', <SalesPage />)} />
+        <Route path="/sold-cars" element={guarded('sales.view', <SoldCarsPage />)} />
+        <Route path="/aftersales" element={guarded('aftersales.view', <AfterSalesSoldCarsPage />)} />
+        <Route path="/aftersales/inventory" element={guarded('aftersales.view', <AfterSalesInventoryPage />)} />
+        <Route path="/aftersales/stock-movements" element={guarded('aftersales.view', <StockMovementsPage />)} />
+        <Route path="/customers-to-call" element={guarded('aftersales.view', <CustomersToCallPage />)} />
+        <Route path="/service-visits" element={guarded('aftersales.view', <ServiceVisitsPage />)} />
+        <Route path="/finance" element={guarded('finance.view', <FinanceDashboardPage />)} />
+        <Route path="/expenses" element={guarded('finance.view', <ExpensesPage />)} />
+        <Route path="/sold-cars-finance" element={guarded('finance.view', <SoldCarsPage />)} />
+        <Route path="/distributor-bonuses" element={guarded('finance.view', <KpiBonusesPage />)} />
+        <Route path="/finance/settings" element={guarded('finance.manage', <FinanceSettingsPage />)} />
         <Route path="/reports" element={<ReportsPage />} />
-        <Route path="/import" element={<ImportPage />} />
-        <Route path="/lead-forms" element={<LeadFormsPage />} />
-        <Route path="/users" element={<UsersPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/import" element={guarded('settings.manage', <ImportPage />)} />
+        <Route path="/lead-forms" element={guarded('settings.manage', <LeadFormsPage />)} />
+        <Route path="/users" element={guarded('users.manage', <UsersPage />)} />
+        <Route path="/settings" element={guarded('settings.manage', <SettingsPage />)} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

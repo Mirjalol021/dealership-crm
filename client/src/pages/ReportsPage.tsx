@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
+import { useAuth } from '../lib/auth';
 import type { Brand, Dealership } from '../lib/types';
 
 type Tab = 'sales' | 'marketing' | 'inventory' | 'finance' | 'aftersales';
@@ -15,7 +16,9 @@ const TABS: { key: Tab; labelKey: string; cap: string }[] = [
 
 export function ReportsPage() {
   const { t } = useTranslation();
-  const [tab, setTab] = useState<Tab>('sales');
+  const { can } = useAuth();
+  const visibleTabs = TABS.filter((x) => can(x.cap));
+  const [tab, setTab] = useState<Tab>(visibleTabs[0]?.key ?? 'sales');
   const [range, setRange] = useState('month');
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -54,7 +57,7 @@ export function ReportsPage() {
       <h1 className="page-title">{t('nav.reports')}</h1>
 
       <div className="tabs">
-        {TABS.map((x) => (
+        {visibleTabs.map((x) => (
           <button key={x.key} className={tab === x.key ? 'active' : ''} onClick={() => setTab(x.key)}>
             {t(`rep.${x.labelKey}`)}
           </button>
