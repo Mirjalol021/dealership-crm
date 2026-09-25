@@ -4,6 +4,7 @@ import { prisma } from '../db.js';
 import { requireAuth, requirePermission } from '../auth/guard.js';
 import { can } from '../auth/permissions.js';
 import { scopeWhere } from '../auth/scope.js';
+import { rangeFromQuery, hasRange } from '../lib/dateRange.js';
 import { normalizePhone } from '../lib/phone.js';
 import { findOrCreateCustomer } from '../lib/leadService.js';
 import { logAuditSafe } from '../lib/audit.js';
@@ -44,12 +45,16 @@ function pick(r: Record<string, string>, ...keys: string[]): string {
 
 export async function importExportRoutes(app: FastifyInstance): Promise<void> {
   // ---------- EXPORT (§65, §66) ----------
-  // Query params: type (leads|sales|inventory|expenses|stock), format (csv|xlsx).
+  // Query params: type, format (csv|xlsx), and the shared filter bar (§68):
+  //   range (today|week|7d|month|lastMonth|custom) | from | to | brandId | dealershipId.
+  // Exports always reflect the CURRENT filtered result (§65).
   app.get('/api/export/:type', { preHandler: [requireAuth] }, async (req, reply) => {
     const user = req.user!;
     const { type } = req.params as { type: string };
     const q = req.query as Record<string, string | undefined>;
     const format = q.format === 'xlsx' ? 'xlsx' : 'csv';
+    const range = rangeFromQuery(q);
+    const useRange = hasRange(range);
 
     let headers: string[] = [];
     let rows: (string | number | null)[][] = [];
@@ -60,6 +65,9 @@ export async function importExportRoutes(app: FastifyInstance): Promise<void> {
       const where: Record<string, unknown> = { ...scopeWhere(user) };
       if (user.role === 'SALES_MANAGER') where.assignedUserId = user.id;
       if (q.brandId) where.brandId = q.brandId;
+      if (q.dealershipId) where.dealershipId = q.dealershipId;
+      if (q.source) where.source = q.source;
+      if (useRange) where.createdAt = range;
       const leads = await prisma.lead.findMany({
         where,
         include: { customer: true, brand: true, dealership: true, assignedUser: { select: { name: true } }, comments: { orderBy: { createdAt: 'desc' } } },
@@ -76,8 +84,12 @@ export async function importExportRoutes(app: FastifyInstance): Promise<void> {
     } else if (type === 'sales') {
       sheet = 'Sales';
       const showCosts = can(user.role, 'costs.view');
+      const where: Record<string, unknown> = { ...scopeWhere(user) };
+      if (q.brandId) where.brandId = q.brandId;
+      if (q.dealershipId) where.dealershipId = q.dealershipId;
+      if (useRange) where.saleDate = range;
       const sales = await prisma.soldCar.findMany({
-        where: { ...scopeWhere(user) },
+        where,
         include: { customer: true, brand: true, salesManager: { select: { name: true } } },
         orderBy: { saleDate: 'desc' }, take: 5000,
       });
@@ -90,7 +102,12 @@ export async function importExportRoutes(app: FastifyInstance): Promise<void> {
       ]);
     } else if (type === 'inventory') {
       sheet = 'Inventory';
-      const vehicles = await prisma.inventoryVehicle.findMany({ where: { ...scopeWhere(user) }, include: { brand: true, dealership: true } });
+      const where: Record<string, unknown> = { ...scopeWhere(user) };
+      if (q.brandId) where.brandId = q.brandId;
+      if (q.dealershipId) where.dealershipId = q.dealershipId;
+      if (q.status) where.status = q.status;
+      if (useRange) where.arrivalDate = range;
+      const vehicles = await prisma.inventoryVehicle.findMany({ where, include: { brand: true, dealership: true } });
       headers = ['Brand', 'Model', 'Trim', 'Color', 'VIN', 'ArrivalDate', 'SellingPrice', 'Status'];
       rows = vehicles.map((v) => [
         v.brand.name, v.model, v.trim, v.color, v.vin, v.arrivalDate.toISOString(),
@@ -98,7 +115,12 @@ export async function importExportRoutes(app: FastifyInstance): Promise<void> {
       ]);
     } else if (type === 'expenses') {
       sheet = 'Expenses';
-      const expenses = await prisma.expense.findMany({ where: { ...scopeWhere(user) }, orderBy: { accountingMonth: 'desc' } });
+      const where: Record<string, unknown> = { ...scopeWhere(user) };
+      if (q.brandId) where.brandId = q.brandId;
+      if (q.dealershipId) where.dealershipId = q.dealershipId;
+      // Expenses are keyed by accounting month (§38); filter on it when a month is given.
+      if (q.month) where.accountingMonth = q.month;
+      const expenses = await prisma.expense.findMany({ where, orderBy: { accountingMonth: 'desc' } });
       headers = ['AccountingMonth', 'PaymentDate', 'Category', 'Type', 'Amount', 'Method', 'Status'];
       rows = expenses.map((e) => [
         e.accountingMonth, e.paymentDate?.toISOString() ?? '', e.category, e.expenseType,
@@ -107,23 +129,55 @@ export async function importExportRoutes(app: FastifyInstance): Promise<void> {
     } else if (type === 'stock') {
       // AfterSales stock movements (§50, §65).
       sheet = 'StockMovements';
+      // AfterSalesInventoryItem has no brandId column — scope by dealership only.
+      const where: Record<string, unknown> = { ...scopeWhere(user, { brandField: null }) };
+      if (q.dealershipId) where.dealershipId = q.dealershipId;
       const items = await prisma.afterSalesInventoryItem.findMany({
-        where: { ...scopeWhere(user) },
+        where,
         include: { receipts: true, usage: true, adjustments: true },
         orderBy: { itemName: 'asc' },
       });
       const showCosts = can(user.role, 'costs.view');
       headers = ['Item', 'Unit', 'Opening', 'Received', 'Used', 'Adjustments', 'Closing', ...(showCosts ? ['CostOfUsed'] : [])];
       rows = items.map((i) => {
-        const received = i.receipts.reduce((s, r) => s + Number(r.quantityReceived), 0);
-        const used = i.usage.reduce((s, u) => s + Number(u.quantity), 0);
-        const adj = i.adjustments.reduce((s, a) => s + Number(a.quantityChange), 0);
+        // Respect the date window when computing movement inside the period.
+        const receipts = useRange
+          ? i.receipts.filter((r) => inRange(r.date, range))
+          : i.receipts;
+        const usage = useRange
+          ? i.usage.filter((u) => inRange(u.timestamp, range))
+          : i.usage;
+        const adjustments = useRange
+          ? i.adjustments.filter((a) => inRange(a.date, range))
+          : i.adjustments;
+        const received = receipts.reduce((s, r) => s + Number(r.quantityReceived), 0);
+        const used = usage.reduce((s, u) => s + Number(u.quantity), 0);
+        const adj = adjustments.reduce((s, a) => s + Number(a.quantityChange), 0);
         const closing = Number(i.quantityOnHand);
         const opening = closing - received + used - adj;
         const row: (string | number | null)[] = [i.itemName, i.unit, opening, received, -used, adj, closing];
-        if (showCosts) row.push(i.usage.reduce((s, u) => s + Number(u.costSnapshot) * Number(u.quantity), 0));
+        if (showCosts) row.push(usage.reduce((s, u) => s + Number(u.costSnapshot) * Number(u.quantity), 0));
         return row;
       });
+    } else if (type === 'aftersales') {
+      // AfterSales sold-cars DB export (§42, §65).
+      sheet = 'AfterSales';
+      const where: Record<string, unknown> = { ...scopeWhere(user) };
+      if (q.brandId) where.brandId = q.brandId;
+      if (q.dealershipId) where.dealershipId = q.dealershipId;
+      if (useRange) where.saleDate = range;
+      const cars = await prisma.soldCar.findMany({
+        where,
+        include: { customer: true, brand: true, salesManager: { select: { name: true } } },
+        orderBy: { saleDate: 'desc' },
+        take: 5000,
+      });
+      headers = ['Customer', 'Phone', 'Brand', 'Model', 'VIN', 'PurchaseDate', 'Manager', 'PaymentType', 'CurrentMileage', 'LastServiceDate', 'NextServiceDate'];
+      rows = cars.map((c) => [
+        c.customer.name, c.phone ?? c.customer.primaryPhone, c.brand.name, c.model, c.vin,
+        c.saleDate.toISOString(), c.salesManager?.name ?? '', c.paymentType,
+        c.currentMileage ?? '', c.lastServiceDate?.toISOString() ?? '', c.nextServiceDate?.toISOString() ?? '',
+      ]);
     } else {
       return reply.code(400).send({ error: 'UNKNOWN_TYPE' });
     }
@@ -362,4 +416,11 @@ export async function importExportRoutes(app: FastifyInstance): Promise<void> {
 
     return reply.send({ batchId: batch.id, preview, counts: { total: rows.length, valid: validRows.length, invalid: batch.invalidRows, duplicate: batch.duplicateRows } });
   });
+}
+
+// Helper: is a timestamp inside the selected range?
+function inRange(d: Date, r: { gte?: Date; lt?: Date }): boolean {
+  if (r.gte && d < r.gte) return false;
+  if (r.lt && d >= r.lt) return false;
+  return true;
 }
