@@ -4,6 +4,8 @@ import { api } from '../api/client';
 import { AS_CATEGORIES, UNITS, type AsItem } from '../lib/aftersalesTypes';
 import type { Dealership } from '../lib/types';
 import { useAuth } from '../lib/auth';
+import { ExportButtons } from '../components/ExportButtons';
+import { formErrorText } from '../lib/formError';
 
 export function AfterSalesInventoryPage() {
   const { t } = useTranslation();
@@ -33,7 +35,10 @@ export function AfterSalesInventoryPage() {
     <div>
       <div className="page-head">
         <h1 className="page-title">{t('as.inventory')}</h1>
-        <button className="btn-primary inline" onClick={() => setShowAdd(true)}>+ {t('as.addItem')}</button>
+        <div className="page-head-actions">
+          <ExportButtons type="stock" />
+          <button className="btn-primary inline" onClick={() => setShowAdd(true)}>+ {t('as.addItem')}</button>
+        </div>
       </div>
 
       <div className="table-scroll">
@@ -90,10 +95,12 @@ function AddItemModal({ dealerships, onClose, onSaved }: { dealerships: Dealersh
     category: 'ENGINE_OIL', unit: 'PIECE', dealershipId: dealerships[0]?.id ?? '',
   });
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
   const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
 
   async function save() {
     setBusy(true);
+    setError('');
     try {
       await api.post('/api/aftersales/items', {
         dealershipId: f.dealershipId,
@@ -106,6 +113,8 @@ function AddItemModal({ dealerships, onClose, onSaved }: { dealerships: Dealersh
         partNumber: f.partNumber || null,
       });
       onSaved();
+    } catch (err) {
+      setError(formErrorText(err));
     } finally {
       setBusy(false);
     }
@@ -128,12 +137,13 @@ function AddItemModal({ dealerships, onClose, onSaved }: { dealerships: Dealersh
         </label>
         <label>{t('as.sellingPrice')} <span className="req">*</span><input type="number" value={f.sellingPrice ?? ''} onChange={(e) => set('sellingPrice', e.target.value)} /></label>
         <label>{t('as.purchaseCost')} <span className="req">*</span><input type="number" value={f.purchaseCost ?? ''} onChange={(e) => set('purchaseCost', e.target.value)} /></label>
-        <label>{t('as.minStock')}<input type="number" value={f.minimumStock ?? ''} onChange={(e) => set('minimumStock', e.target.value)} /></label>
+        <label>{t('as.minStock')} <span className="opt">{t('common.optional')}</span><input type="number" value={f.minimumStock ?? ''} onChange={(e) => set('minimumStock', e.target.value)} /></label>
         <label>{t('lead.dealership')}
           <select value={f.dealershipId} onChange={(e) => set('dealershipId', e.target.value)}>
             {dealerships.map((d) => <option key={d.id} value={d.id}>{d.dealershipName}</option>)}
           </select>
         </label>
+        {error && <div className="error">{error}</div>}
         <div className="modal-actions">
           <button className="btn-ghost" onClick={onClose}>{t('lead.cancel')}</button>
           <button className="btn-primary" disabled={busy || !f.itemName || !f.sellingPrice || !f.purchaseCost} onClick={save}>{t('lead.save')}</button>
@@ -148,15 +158,19 @@ function ReceiveModal({ itemId, onClose, onSaved }: { itemId: string; onClose: (
   const [qty, setQty] = useState('');
   const [cost, setCost] = useState('');
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
 
   async function save() {
     setBusy(true);
+    setError('');
     try {
       await api.post(`/api/aftersales/items/${itemId}/receive`, {
         quantityReceived: Number(qty || 0),
         unitCost: Number(cost || 0),
       });
       onSaved();
+    } catch (err) {
+      setError(formErrorText(err));
     } finally {
       setBusy(false);
     }
@@ -167,7 +181,8 @@ function ReceiveModal({ itemId, onClose, onSaved }: { itemId: string; onClose: (
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <h2>{t('as.receive')}</h2>
         <label>{t('as.qty')} <span className="req">*</span><input type="number" value={qty} onChange={(e) => setQty(e.target.value)} /></label>
-        <label>{t('as.purchaseCost')}<input type="number" value={cost} onChange={(e) => setCost(e.target.value)} /></label>
+        <label>{t('as.purchaseCost')} <span className="opt">{t('common.optional')}</span><input type="number" value={cost} onChange={(e) => setCost(e.target.value)} /></label>
+        {error && <div className="error">{error}</div>}
         <div className="modal-actions">
           <button className="btn-ghost" onClick={onClose}>{t('lead.cancel')}</button>
           <button className="btn-primary" disabled={busy || !qty} onClick={save}>{t('lead.save')}</button>
@@ -182,15 +197,19 @@ function AdjustModal({ itemId, onClose, onSaved }: { itemId: string; onClose: ()
   const [change, setChange] = useState('');
   const [reason, setReason] = useState('DAMAGED');
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
 
   async function save() {
     setBusy(true);
+    setError('');
     try {
       await api.post(`/api/aftersales/items/${itemId}/adjust`, {
         quantityChange: Number(change || 0),
         reason,
       });
       onSaved();
+    } catch (err) {
+      setError(formErrorText(err));
     } finally {
       setBusy(false);
     }
@@ -211,6 +230,7 @@ function AdjustModal({ itemId, onClose, onSaved }: { itemId: string; onClose: ()
             <option value="OTHER">{t('as.other')}</option>
           </select>
         </label>
+        {error && <div className="error">{error}</div>}
         <div className="modal-actions">
           <button className="btn-ghost" onClick={onClose}>{t('lead.cancel')}</button>
           <button className="btn-primary" disabled={busy || !change} onClick={save}>{t('lead.save')}</button>

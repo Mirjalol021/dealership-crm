@@ -5,6 +5,7 @@ import { requireAuth, requirePermission, requireAnyPermission } from '../auth/gu
 import { normalizePhone } from '../lib/phone.js';
 import { findOrCreateCustomer, logActivity, logAssignment, nextAttemptNo } from '../lib/leadService.js';
 import { scopeWhere, canAccessScope } from '../auth/scope.js';
+import { rangeFromQuery, hasRange } from '../lib/dateRange.js';
 import type { AuthUser } from '../auth/session.js';
 
 const RESULT_ENUM = [
@@ -147,19 +148,9 @@ export async function leadRoutes(app: FastifyInstance): Promise<void> {
       where.nextFollowUpAt = { lt: startOfToday };
     }
 
-    // Date range filter (§25, §68): today | 7d | month | custom (from/to)
-    if (q.range === 'today') {
-      where.createdAt = { gte: startOfToday, lt: endOfToday };
-    } else if (q.range === '7d') {
-      where.createdAt = { gte: new Date(startOfToday.getTime() - 6 * 86400000) };
-    } else if (q.range === 'month') {
-      where.createdAt = { gte: new Date(now.getFullYear(), now.getMonth(), 1) };
-    } else if (q.from || q.to) {
-      const range: Record<string, Date> = {};
-      if (q.from) range.gte = new Date(q.from);
-      if (q.to) range.lte = new Date(`${q.to}T23:59:59.999Z`);
-      where.createdAt = range;
-    }
+    // Date range filter (§25, §68): today | week | 7d | month | lastMonth | custom.
+    const dr = rangeFromQuery(q);
+    if (hasRange(dr)) where.createdAt = dr;
 
     const leads = await prisma.lead.findMany({
       where,
@@ -438,6 +429,8 @@ export async function leadRoutes(app: FastifyInstance): Promise<void> {
     if (q.dealershipId) where.dealershipId = q.dealershipId;
     if (q.brandId) where.brandId = q.brandId;
     if (q.managerId) where.assignedUserId = q.managerId;
+    const dr = rangeFromQuery(q);
+    if (hasRange(dr)) where.createdAt = dr;
 
     const managers = await prisma.user.findMany({
       where: { role: { in: ['SALES_MANAGER', 'HEAD_OF_SALES'] }, active: true },
@@ -474,17 +467,8 @@ export async function leadRoutes(app: FastifyInstance): Promise<void> {
     if (q.source) where.source = q.source;
     if (q.campaign) where.campaign = q.campaign;
 
-    const now = new Date();
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    if (q.range === 'today') where.createdAt = { gte: startOfToday };
-    else if (q.range === '7d') where.createdAt = { gte: new Date(startOfToday.getTime() - 6 * 86400000) };
-    else if (q.range === 'month') where.createdAt = { gte: new Date(now.getFullYear(), now.getMonth(), 1) };
-    else if (q.from || q.to) {
-      const range: Record<string, Date> = {};
-      if (q.from) range.gte = new Date(q.from);
-      if (q.to) range.lte = new Date(`${q.to}T23:59:59.999Z`);
-      where.createdAt = range;
-    }
+    const dr = rangeFromQuery(q);
+    if (hasRange(dr)) where.createdAt = dr;
 
     const managers = await prisma.user.findMany({
       where: { role: { in: ['SALES_MANAGER', 'HEAD_OF_SALES'] }, active: true },

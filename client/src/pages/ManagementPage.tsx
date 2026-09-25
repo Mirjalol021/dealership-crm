@@ -8,11 +8,13 @@ import { LeadDetailModal } from '../components/LeadDetailModal';
 type Row = Record<string, string | number>;
 
 interface Filters {
-  range: '' | 'today' | '7d' | 'month';
+  range: '' | 'today' | 'week' | '7d' | 'month' | 'custom';
   dealershipId: string;
   brandId: string;
   managerId: string;
   source: string;
+  from: string;
+  to: string;
 }
 
 export function ManagementPage() {
@@ -21,7 +23,7 @@ export function ManagementPage() {
   const [result, setResult] = useState<{ table: Row[]; results: string[] }>({ table: [], results: [] });
   const [brands, setBrands] = useState<Brand[]>([]);
   const [dealerships, setDealerships] = useState<Dealership[]>([]);
-  const [filters, setFilters] = useState<Filters>({ range: 'month', dealershipId: '', brandId: '', managerId: '', source: '' });
+  const [filters, setFilters] = useState<Filters>({ range: 'month', dealershipId: '', brandId: '', managerId: '', source: '', from: '', to: '' });
   const [drill, setDrill] = useState<{ leads: ListLead[]; title: string } | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
 
@@ -32,6 +34,10 @@ export function ManagementPage() {
     if (filters.brandId) q.set('brandId', filters.brandId);
     if (filters.managerId) q.set('managerId', filters.managerId);
     if (filters.source) q.set('source', filters.source);
+    if (filters.range === 'custom') {
+      if (filters.from) q.set('from', filters.from);
+      if (filters.to) q.set('to', filters.to);
+    }
     return q.toString();
   }
 
@@ -196,10 +202,18 @@ function FilterBar({
         <select value={filters.range} onChange={(e) => set({ range: e.target.value as Filters['range'] })}>
           <option value="">{t('lead.all')}</option>
           <option value="today">{t('lead.today')}</option>
+          <option value="week">{t('rep.thisWeek')}</option>
           <option value="7d">{t('lead.week7')}</option>
           <option value="month">{t('lead.thisMonth')}</option>
+          <option value="custom">{t('rep.custom')}</option>
         </select>
       </label>
+      {filters.range === 'custom' && (
+        <>
+          <label>{t('rep.from')}<input type="date" value={filters.from} onChange={(e) => set({ from: e.target.value })} /></label>
+          <label>{t('rep.to')}<input type="date" value={filters.to} onChange={(e) => set({ to: e.target.value })} /></label>
+        </>
+      )}
       <label>
         {t('settings.dealerships')}
         <select value={filters.dealershipId} onChange={(e) => set({ dealershipId: e.target.value })}>

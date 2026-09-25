@@ -3,25 +3,7 @@ import { prisma } from '../db.js';
 import { requirePermission } from '../auth/guard.js';
 import { can } from '../auth/permissions.js';
 import { scopeWhere } from '../auth/scope.js';
-
-// Shared date-range helper (§68).
-function rangeFromQuery(q: Record<string, string | undefined>): { gte?: Date; lt?: Date } {
-  const now = new Date();
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  if (q.range === 'today') return { gte: startOfToday };
-  if (q.range === '7d') return { gte: new Date(startOfToday.getTime() - 6 * 86400000) };
-  if (q.range === 'lastMonth') {
-    return {
-      gte: new Date(now.getFullYear(), now.getMonth() - 1, 1),
-      lt: new Date(now.getFullYear(), now.getMonth(), 1),
-    };
-  }
-  if (q.range === 'month') return { gte: new Date(now.getFullYear(), now.getMonth(), 1) };
-  const r: { gte?: Date; lt?: Date } = {};
-  if (q.from) r.gte = new Date(q.from);
-  if (q.to) r.lt = new Date(`${q.to}T23:59:59.999Z`);
-  return r;
-}
+import { rangeFromQuery } from '../lib/dateRange.js';
 
 export async function reportRoutes(app: FastifyInstance): Promise<void> {
   // ---------- SALES REPORT (§67) ----------
@@ -62,10 +44,17 @@ export async function reportRoutes(app: FastifyInstance): Promise<void> {
     const brands = await prisma.brand.findMany({ where: { id: { in: byBrand.map((b) => b.brandId) } }, select: { id: true, name: true } });
     const brandById = new Map(brands.map((b) => [b.id, b.name]));
 
+    // Pipeline Status by Manager (§67) — same shape as the management analytics table.
+    const pipelineByManager = await pipelineTable(leadWhere);
+    // Lead Result by Manager (§67).
+    const resultByManager = await resultTable(leadWhere);
+
     return reply.send({
       summary: { leads, contacted, visits, sold, conversion: leads > 0 ? sold / leads : 0 },
       salesByManager: byManager.map((b) => ({ manager: nameById.get(b.assignedUserId!) ?? '—', sold: b._count._all })),
       salesByBrand: byBrand.map((b) => ({ brand: brandById.get(b.brandId) ?? '—', sold: b._count._all })),
+      pipelineByManager,
+      resultByManager,
     });
   });
 
@@ -164,11 +153,24 @@ export async function reportRoutes(app: FastifyInstance): Promise<void> {
     const kpi = await prisma.kpiBonus.findMany({ where: { month } });
     const kpiTotal = kpi.filter((b) => b.status !== 'EXPECTED').reduce((s, b) => s + Number(b.amount), 0);
 
+    // Service Revenue / Contribution (§67 finance report).
+    // ServiceVisit has no brandId column — scope by dealership only.
+    const visits = await prisma.serviceVisit.findMany({
+      where: { serviceDate: { gte, lt }, ...scopeWhere(req.user!, { brandField: null }) },
+      include: { inventoryUsage: true },
+    });
+    const serviceRevenue = visits.reduce((s, v) => s + Number(v.serviceRevenue), 0);
+    const servicePartsCost = visits.reduce(
+      (s, v) => s + v.inventoryUsage.reduce((x, u) => x + Number(u.costSnapshot) * Number(u.quantity), 0), 0,
+    );
+
     return reply.send({
       month,
       turnover, margin, customerBonuses, vinBonuses, kpiBonuses: kpiTotal,
       fixedExpenses: fixed, variableExpenses: variable,
       totalExpenses: fixed + variable,
+      serviceRevenue,
+      serviceContribution: serviceRevenue - servicePartsCost,
     });
   });
 
@@ -176,8 +178,14 @@ export async function reportRoutes(app: FastifyInstance): Promise<void> {
   app.get('/api/reports/aftersales', { preHandler: [requirePermission('reports.aftersales')] }, async (req, reply) => {
     const user = req.user!;
     const showCosts = can(user.role, 'costs.view');
+    const q = req.query as Record<string, string | undefined>;
+    const r = rangeFromQuery(q);
+    // ServiceVisit has no brandId column — scope by dealership only.
+    const where: Record<string, unknown> = { ...scopeWhere(user, { brandField: null }) };
+    if (r.gte || r.lt) where.serviceDate = r;
+
     const visits = await prisma.serviceVisit.findMany({
-      where: { ...scopeWhere(user) },
+      where,
       include: { inventoryUsage: true },
       orderBy: { serviceDate: 'desc' },
       take: 1000,
@@ -186,9 +194,33 @@ export async function reportRoutes(app: FastifyInstance): Promise<void> {
     const partsCost = visits.reduce(
       (s, v) => s + v.inventoryUsage.reduce((x, u) => x + Number(u.costSnapshot) * Number(u.quantity), 0), 0,
     );
+
+    // Customers due / overdue (§67 AfterSales report).
+    const now = new Date();
+    const [due, overdue] = await Promise.all([
+      prisma.soldCar.count({ where: { ...scopeWhere(user), nextServiceDate: { lte: new Date(now.getTime() + 30 * 86400000) } } }),
+      prisma.soldCar.count({ where: { ...scopeWhere(user), nextServiceDate: { lt: now } } }),
+    ]);
+
+    // Inventory usage + stock movements summary (§67).
+    // AfterSalesInventoryItem has no brandId column — scope by dealership only.
+    const stockItems = await prisma.afterSalesInventoryItem.findMany({
+      where: { ...scopeWhere(user, { brandField: null }) },
+      include: { receipts: true, usage: true, adjustments: true },
+    });
+    const stockMovements = {
+      received: stockItems.reduce((s, i) => s + i.receipts.reduce((x, rr) => x + Number(rr.quantityReceived), 0), 0),
+      used: stockItems.reduce((s, i) => s + i.usage.reduce((x, u) => x + Number(u.quantity), 0), 0),
+      adjustments: stockItems.reduce((s, i) => s + i.adjustments.reduce((x, a) => x + Number(a.quantityChange), 0), 0),
+    };
+
     const base: Record<string, unknown> = {
       serviceVisits: visits.length,
       serviceRevenue,
+      customersDue: due,
+      customersOverdue: overdue,
+      inventoryUsage: stockMovements.used,
+      stockMovements,
     };
     if (showCosts) {
       base.partsCost = partsCost;
@@ -196,4 +228,61 @@ export async function reportRoutes(app: FastifyInstance): Promise<void> {
     }
     return reply.send(base);
   });
+}
+
+// ---------- Shared analytics helpers (§25, §67) ----------
+
+type Where = Record<string, unknown>;
+
+const PIPELINE_ORDER = ['NEW', 'WORKING', 'VISIT_PLANNED', 'VISITED_TEST_DRIVE', 'SOLD', 'LOST'];
+const RESULT_ORDER = [
+  'NO_ANSWER', 'CLIENT_BUSY', 'INFO_GIVEN_THINKING', 'INFO_GIVEN_VISIT_EXPECTED', 'INTERESTED',
+  'VISIT_PLANNED', 'TEST_DRIVE_COMPLETED', 'SOLD', 'NOT_INTERESTED', 'WRONG_NUMBER',
+  'LEFT_INFO_BY_MISTAKE', 'ANOTHER_REGION',
+];
+
+// Pipeline Status by Manager (§67).
+async function pipelineTable(where: Where) {
+  const managers = await prisma.user.findMany({
+    where: { role: { in: ['SALES_MANAGER', 'HEAD_OF_SALES'] }, active: true },
+    select: { id: true, name: true },
+    orderBy: { name: 'asc' },
+  });
+  const grouped = await prisma.lead.groupBy({
+    by: ['assignedUserId', 'pipelineStatus'],
+    where: { ...where, assignedUserId: { not: null } },
+    _count: { _all: true },
+  });
+  const table = managers.map((m) => {
+    const row: Record<string, string | number> = { managerId: m.id, managerName: m.name };
+    for (const s of PIPELINE_ORDER) row[s] = 0;
+    for (const g of grouped) {
+      if (g.assignedUserId === m.id) row[g.pipelineStatus] = g._count._all;
+    }
+    return row;
+  }).filter((row) => PIPELINE_ORDER.some((s) => Number(row[s]) > 0));
+  return { table, statuses: PIPELINE_ORDER };
+}
+
+// Lead Result by Manager (§67).
+async function resultTable(where: Where) {
+  const managers = await prisma.user.findMany({
+    where: { role: { in: ['SALES_MANAGER', 'HEAD_OF_SALES'] }, active: true },
+    select: { id: true, name: true },
+    orderBy: { name: 'asc' },
+  });
+  const grouped = await prisma.lead.groupBy({
+    by: ['assignedUserId', 'lastResult'],
+    where: { ...where, assignedUserId: { not: null } },
+    _count: { _all: true },
+  });
+  const table = managers.map((m) => {
+    const row: Record<string, string | number> = { managerId: m.id, managerName: m.name };
+    for (const res of RESULT_ORDER) row[res] = 0;
+    for (const g of grouped) {
+      if (g.assignedUserId === m.id && g.lastResult) row[g.lastResult] = g._count._all;
+    }
+    return row;
+  }).filter((row) => RESULT_ORDER.some((res) => Number(row[res]) > 0));
+  return { table, results: RESULT_ORDER };
 }

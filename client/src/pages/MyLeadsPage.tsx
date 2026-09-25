@@ -5,6 +5,7 @@ import type { ListLead } from '../lib/leadTypes';
 import type { Brand } from '../lib/types';
 import { LeadAddModal } from '../components/LeadAddModal';
 import { LeadDetailModal } from '../components/LeadDetailModal';
+import { ExportButtons } from '../components/ExportButtons';
 
 // Quick filter chips (§17).
 const QUICK = [
@@ -22,10 +23,12 @@ const QUICK = [
 
 const SOURCES = ['META', 'TELEGRAM', 'INSTAGRAM_ORGANIC', 'TELEGRAM_ORGANIC', 'WALK_IN', 'PHONE_CALL', 'REFERRAL', 'EXISTING_CUSTOMER', 'MANUAL', 'OTHER'];
 
-export function MyLeadsPage() {
+type QuickKey = (typeof QUICK)[number]['key'];
+
+export function MyLeadsPage({ initialFilter = 'new', titleKey = 'nav.myLeads' }: { initialFilter?: string; titleKey?: string } = {}) {
   const { t } = useTranslation();
   const [leads, setLeads] = useState<ListLead[]>([]);
-  const [active, setActive] = useState<string>('new');
+  const [active, setActive] = useState<QuickKey | string>(initialFilter);
   const [showAdd, setShowAdd] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
   // Additional filters (§17).
@@ -60,8 +63,11 @@ export function MyLeadsPage() {
   return (
     <div>
       <div className="page-head">
-        <h1 className="page-title">{t('nav.myLeads')}</h1>
-        <button className="btn-primary inline" onClick={() => setShowAdd(true)}>+ {t('lead.addLead')}</button>
+        <h1 className="page-title">{t(titleKey)}</h1>
+        <div className="page-head-actions">
+          <ExportButtons type="leads" params={{ brandId: brandId || undefined, source: source || undefined }} />
+          <button className="btn-primary inline" onClick={() => setShowAdd(true)}>+ {t('lead.addLead')}</button>
+        </div>
       </div>
 
       <div className="chips">
@@ -80,7 +86,7 @@ export function MyLeadsPage() {
           </select>
         </label>
         <label>{t('lead.model')}
-          <input value={model} onChange={(e) => setModel(e.target.value)} placeholder="EX5..." />
+          <input value={model} onChange={(e) => setModel(e.target.value)} placeholder={t('lead.modelPlaceholder')} />
         </label>
         <label>{t('lead.source')}
           <select value={source} onChange={(e) => setSource(e.target.value)}>

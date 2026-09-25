@@ -14,6 +14,15 @@ const TABS: { key: Tab; labelKey: string; cap: string }[] = [
   { key: 'aftersales', labelKey: 'aftersalesReport', cap: 'reports.aftersales' },
 ];
 
+// Export type per report tab (§65). Finance exports its expenses list.
+const EXPORT_TYPE: Record<Tab, string> = {
+  sales: 'leads',
+  marketing: 'leads',
+  inventory: 'inventory',
+  finance: 'expenses',
+  aftersales: 'aftersales',
+};
+
 export function ReportsPage() {
   const { t } = useTranslation();
   const { can } = useAuth();
@@ -21,6 +30,8 @@ export function ReportsPage() {
   const [tab, setTab] = useState<Tab>(visibleTabs[0]?.key ?? 'sales');
   const [range, setRange] = useState('month');
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
   const [brands, setBrands] = useState<Brand[]>([]);
   const [dealerships, setDealerships] = useState<Dealership[]>([]);
   const [brandId, setBrandId] = useState('');
@@ -35,10 +46,22 @@ export function ReportsPage() {
     ]).then(([b, d]) => { setBrands(b.brands); setDealerships(d.dealerships); });
   }, []);
 
-  useEffect(() => {
-    const q = new URLSearchParams({ range, month });
+  // Shared filter bar (§68). The exact same params feed the report AND the export.
+  function buildFilterQuery(): URLSearchParams {
+    const q = new URLSearchParams({ range });
+    if (range === 'custom') {
+      if (from) q.set('from', from);
+      if (to) q.set('to', to);
+    } else {
+      q.set('month', month);
+    }
     if (brandId) q.set('brandId', brandId);
     if (dealershipId) q.set('dealershipId', dealershipId);
+    return q;
+  }
+
+  useEffect(() => {
+    const q = buildFilterQuery();
     if (tab === 'marketing') q.set('group', group);
     const endpoint =
       tab === 'sales' ? '/api/reports/sales'
@@ -47,10 +70,14 @@ export function ReportsPage() {
       : tab === 'finance' ? '/api/reports/finance'
       : '/api/reports/aftersales';
     api.get<Record<string, unknown>>(`${endpoint}?${q}`).then(setData);
-  }, [tab, range, month, brandId, dealershipId, group]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, range, month, from, to, brandId, dealershipId, group]);
 
+  // Export the CURRENT filtered result (§65) — same params as the on-screen report.
   function download(type: string, format: 'csv' | 'xlsx') {
-    const q = new URLSearchParams({ format });
+    const q = buildFilterQuery();
+    q.set('format', format);
+    if (type === 'expenses' && range !== 'custom') q.set('month', month);
     window.open(`/api/export/${type}?${q}`, '_blank');
   }
 
@@ -70,12 +97,19 @@ export function ReportsPage() {
         <label>{t('rep.dateRange')}
           <select value={range} onChange={(e) => setRange(e.target.value)}>
             <option value="today">{t('rep.today')}</option>
+            <option value="week">{t('rep.thisWeek')}</option>
             <option value="7d">{t('rep.week7')}</option>
             <option value="month">{t('rep.thisMonth')}</option>
             <option value="lastMonth">{t('rep.lastMonth')}</option>
+            <option value="custom">{t('rep.custom')}</option>
           </select>
         </label>
-        {tab === 'finance' && (
+        {range === 'custom' ? (
+          <>
+            <label>{t('rep.from')}<input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></label>
+            <label>{t('rep.to')}<input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></label>
+          </>
+        ) : (
           <label>{t('fin.month')}<input type="month" value={month} onChange={(e) => setMonth(e.target.value)} /></label>
         )}
         {tab === 'marketing' && (
@@ -111,8 +145,8 @@ export function ReportsPage() {
 
       <div className="export-bar">
         <span className="muted">{t('rep.export')}:</span>
-        <button className="btn-ghost" onClick={() => download(tab === 'finance' ? 'expenses' : 'leads', 'csv')}>{t('rep.exportCsv')}</button>
-        <button className="btn-ghost" onClick={() => download(tab === 'finance' ? 'expenses' : 'leads', 'xlsx')}>{t('rep.exportXlsx')}</button>
+        <button className="btn-ghost" onClick={() => download(EXPORT_TYPE[tab], 'csv')}>{t('rep.exportCsv')}</button>
+        <button className="btn-ghost" onClick={() => download(EXPORT_TYPE[tab], 'xlsx')}>{t('rep.exportXlsx')}</button>
       </div>
     </div>
   );
@@ -128,6 +162,8 @@ function SalesReport({ data }: { data: Record<string, unknown> | null }) {
   const s = data.summary as Record<string, number>;
   const byManager = data.salesByManager as { manager: string; sold: number }[];
   const byBrand = data.salesByBrand as { brand: string; sold: number }[];
+  const pipeline = data.pipelineByManager as { table: Record<string, string | number>[]; statuses: string[] } | undefined;
+  const results = data.resultByManager as { table: Record<string, string | number>[]; results: string[] } | undefined;
   return (
     <>
       <div className="fin-grid">
@@ -145,6 +181,44 @@ function SalesReport({ data }: { data: Record<string, unknown> | null }) {
           <table className="table"><tbody>{byBrand.map((b) => <tr key={b.brand}><td>{b.brand}</td><td>{b.sold}</td></tr>)}</tbody></table>
         </div>
       </div>
+
+      {pipeline && pipeline.table.length > 0 && (
+        <div className="card" style={{ marginTop: 16 }}>
+          <h2>{t('rep.pipelineByManager')}</h2>
+          <div className="table-scroll">
+            <table className="table">
+              <thead><tr><th>{t('lead.manager')}</th>{pipeline.statuses.map((s2) => <th key={s2}>{t(`pipelineStatus.${s2}`)}</th>)}</tr></thead>
+              <tbody>
+                {pipeline.table.map((row) => (
+                  <tr key={String(row.managerId)}>
+                    <td>{String(row.managerName)}</td>
+                    {pipeline.statuses.map((s2) => <td key={s2}>{Number(row[s2]) || 0}</td>)}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {results && results.table.length > 0 && (
+        <div className="card" style={{ marginTop: 16 }}>
+          <h2>{t('rep.resultByManager')}</h2>
+          <div className="table-scroll">
+            <table className="table">
+              <thead><tr><th>{t('lead.manager')}</th>{results.results.map((r) => <th key={r}>{t(`resultLabel.${r}`)}</th>)}</tr></thead>
+              <tbody>
+                {results.table.map((row) => (
+                  <tr key={String(row.managerId)}>
+                    <td>{String(row.managerName)}</td>
+                    {results.results.map((r) => <td key={r}>{Number(row[r]) || 0}</td>)}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </>
   );
 }
@@ -191,6 +265,8 @@ function FinanceReport({ data }: { data: Record<string, unknown> | null }) {
       <Stat label={t('fin.fixed')} value={d.fixedExpenses} />
       <Stat label={t('fin.variable')} value={d.variableExpenses} />
       <Stat label={t('fin.totalExpenses')} value={d.totalExpenses} />
+      <Stat label={t('fin.serviceRevenue')} value={d.serviceRevenue} />
+      {d.serviceContribution != null && <Stat label={t('as.contribution')} value={d.serviceContribution} />}
     </div>
   );
 }
@@ -201,10 +277,13 @@ function AfterSalesReport({ data }: { data: Record<string, unknown> | null }) {
   const d = data as Record<string, number>;
   return (
     <div className="fin-grid">
+      <Stat label={t('rep.customersDue')} value={d.customersDue ?? 0} />
+      <Stat label={t('rep.customersOverdue')} value={d.customersOverdue ?? 0} />
       <Stat label={t('as.serviceVisits')} value={d.serviceVisits} />
       <Stat label={t('fin.serviceRevenue')} value={d.serviceRevenue} />
       {d.partsCost != null && <Stat label={t('as.inventoryCost')} value={d.partsCost} />}
       {d.serviceContribution != null && <Stat label={t('as.contribution')} value={d.serviceContribution} />}
+      <Stat label={t('as.used')} value={d.inventoryUsage ?? 0} />
     </div>
   );
 }

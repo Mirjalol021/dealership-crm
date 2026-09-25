@@ -1,11 +1,13 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
+import { formErrorText } from '../lib/formError';
 import type { Vehicle, VehicleStatus } from '../lib/vehicleTypes';
 import type { Brand, Dealership } from '../lib/types';
 import { useAuth } from '../lib/auth';
 import { ReserveModal } from '../components/ReserveModal';
 import { SellModal } from '../components/SellModal';
+import { ExportButtons } from '../components/ExportButtons';
 
 export function InventoryPage() {
   const { t } = useTranslation();
@@ -38,9 +40,12 @@ export function InventoryPage() {
     <div>
       <div className="page-head">
         <h1 className="page-title">{t('veh.inventory')}</h1>
-        {canManage && (
-          <button className="btn-primary inline" onClick={() => setShowAdd(true)}>+ {t('veh.addVehicle')}</button>
-        )}
+        <div className="page-head-actions">
+          <ExportButtons type="inventory" params={{ status: statusFilter || undefined }} />
+          {canManage && (
+            <button className="btn-primary inline" onClick={() => setShowAdd(true)}>+ {t('veh.addVehicle')}</button>
+          )}
+        </div>
       </div>
 
       <div className="stat-row three">
@@ -161,7 +166,7 @@ function AddVehicleModal({ onClose, onSaved }: { onClose: () => void; onSaved: (
       });
       onSaved();
     } catch (err) {
-      setError(err instanceof Error && err.message === 'VIN_TAKEN' ? t('err.vinTaken') : t('err.generic'));
+      setError(formErrorText(err));
     } finally {
       setBusy(false);
     }
@@ -179,24 +184,25 @@ function AddVehicleModal({ onClose, onSaved }: { onClose: () => void; onSaved: (
         <label>{t('lead.model')} <span className="req">*</span>
           <input value={form.model ?? ''} onChange={(e) => set('model', e.target.value)} required />
         </label>
-        <label>{t('veh.trim')}<input value={form.trim ?? ''} onChange={(e) => set('trim', e.target.value)} /></label>
-        <label>{t('veh.color')}<input value={form.color ?? ''} onChange={(e) => set('color', e.target.value)} /></label>
+        <label>{t('veh.trim')} <span className="opt">{t('common.optional')}</span><input value={form.trim ?? ''} onChange={(e) => set('trim', e.target.value)} /></label>
+        <label>{t('veh.color')} <span className="opt">{t('common.optional')}</span><input value={form.color ?? ''} onChange={(e) => set('color', e.target.value)} /></label>
         <label>{t('veh.vin')} <span className="req">*</span>
-          <input value={form.vin ?? ''} onChange={(e) => set('vin', e.target.value)} required />
+          <input value={form.vin ?? ''} onChange={(e) => set('vin', e.target.value)}
+            required minLength={5} placeholder={t('veh.vinHint')} />
         </label>
         <label>{t('lead.dealership')}
           <select value={form.dealershipId ?? ''} onChange={(e) => set('dealershipId', e.target.value)}>
             {dealerships.map((d) => <option key={d.id} value={d.id}>{d.dealershipName}</option>)}
           </select>
         </label>
-        <label>{t('veh.sellingPrice')}
+        <label>{t('veh.sellingPrice')} <span className="opt">{t('common.optional')}</span>
           <input type="number" value={form.sellingPrice ?? ''} onChange={(e) => set('sellingPrice', e.target.value)} />
         </label>
-        <label>{t('veh.notes')}<input value={form.notes ?? ''} onChange={(e) => set('notes', e.target.value)} /></label>
+        <label>{t('veh.notes')} <span className="opt">{t('common.optional')}</span><input value={form.notes ?? ''} onChange={(e) => set('notes', e.target.value)} /></label>
         {error && <div className="error">{error}</div>}
         <div className="modal-actions">
           <button className="btn-ghost" onClick={onClose}>{t('lead.cancel')}</button>
-          <button className="btn-primary" disabled={busy || !form.model || !form.vin} onClick={save}>{t('lead.save')}</button>
+          <button className="btn-primary" disabled={busy || !form.model || (form.vin ?? '').length < 5} onClick={save}>{t('lead.save')}</button>
         </div>
       </div>
     </div>

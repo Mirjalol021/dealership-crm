@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import type { Sale } from '../lib/vehicleTypes';
 import { useAuth } from '../lib/auth';
 import { SaleDetailModal } from '../components/SaleDetailModal';
+import { ExportButtons } from '../components/ExportButtons';
 
 export function SoldCarsPage() {
   const { t } = useTranslation();
@@ -28,10 +29,13 @@ export function SoldCarsPage() {
     <div>
       <div className="page-head">
         <h1 className="page-title">{t('veh.soldCars')}</h1>
-        <label className="check inline">
-          <input type="checkbox" checked={discountedOnly} onChange={(e) => setDiscountedOnly(e.target.checked)} />
-          {t('veh.discountedSale')}
-        </label>
+        <div className="page-head-actions">
+          <ExportButtons type="sales" />
+          <label className="check inline">
+            <input type="checkbox" checked={discountedOnly} onChange={(e) => setDiscountedOnly(e.target.checked)} />
+            {t('veh.discountedSale')}
+          </label>
+        </div>
       </div>
 
       <div className="table-scroll">

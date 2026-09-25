@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
 import { EXPENSE_CATEGORIES, type Expense } from '../lib/financeTypes';
 import type { Brand, Dealership } from '../lib/types';
+import { ExportButtons } from '../components/ExportButtons';
+import { formErrorText } from '../lib/formError';
 
 export function ExpensesPage() {
   const { t } = useTranslation();
@@ -30,7 +32,10 @@ export function ExpensesPage() {
     <div>
       <div className="page-head">
         <h1 className="page-title">{t('fin.expenses')}</h1>
-        <button className="btn-primary inline" onClick={() => setShowAdd(true)}>+ {t('fin.addExpense')}</button>
+        <div className="page-head-actions">
+          <ExportButtons type="expenses" />
+          <button className="btn-primary inline" onClick={() => setShowAdd(true)}>+ {t('fin.addExpense')}</button>
+        </div>
       </div>
 
       <div className="table-scroll">
@@ -83,10 +88,12 @@ function AddExpenseModal({
     expenseType: 'FIXED', category: 'Rent', paymentMethod: 'LLC_ACCOUNT', status: 'PENDING',
   });
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
   const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
 
   async function save() {
     setBusy(true);
+    setError('');
     try {
       await api.post('/api/expenses', {
         accountingMonth: f.accountingMonth,
@@ -101,6 +108,8 @@ function AddExpenseModal({
         comment: f.comment || null,
       });
       onSaved();
+    } catch (err) {
+      setError(formErrorText(err));
     } finally {
       setBusy(false);
     }
@@ -151,11 +160,12 @@ function AddExpenseModal({
         </label>
         <label>{t('lead.brand')}
           <select value={f.brandId ?? ''} onChange={(e) => set('brandId', e.target.value)}>
-            <option value="">Corporate</option>
+            <option value="">{t('common.corporate')}</option>
             {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
           </select>
         </label>
-        <label>{t('lead.comment')}<input value={f.comment ?? ''} onChange={(e) => set('comment', e.target.value)} /></label>
+        <label>{t('lead.comment')} <span className="opt">{t('common.optional')}</span><input value={f.comment ?? ''} onChange={(e) => set('comment', e.target.value)} /></label>
+        {error && <div className="error">{error}</div>}
         <div className="modal-actions">
           <button className="btn-ghost" onClick={onClose}>{t('lead.cancel')}</button>
           <button className="btn-primary" disabled={busy || !f.amount} onClick={save}>{t('lead.save')}</button>
