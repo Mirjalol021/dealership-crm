@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
+import { Loading, ErrorState, EmptyState } from '../components/AsyncState';
 import { EXPENSE_CATEGORIES, type Expense } from '../lib/financeTypes';
 import type { Brand, Dealership } from '../lib/types';
 import { ExportButtons } from '../components/ExportButtons';
@@ -13,20 +14,33 @@ export function ExpensesPage() {
   const [dealerships, setDealerships] = useState<Dealership[]>([]);
   const [showAdd, setShowAdd] = useState(false);
 
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   async function load() {
-    const [e, b, d] = await Promise.all([
-      api.get<{ expenses: Expense[] }>('/api/expenses'),
-      api.get<{ brands: Brand[] }>('/api/brands'),
-      api.get<{ dealerships: Dealership[] }>('/api/dealerships'),
-    ]);
-    setExpenses(e.expenses);
-    setBrands(b.brands);
-    setDealerships(d.dealerships);
+    setLoading(true); setError(null);
+    try {
+          const [e, b, d] = await Promise.all([
+            api.get<{ expenses: Expense[] }>('/api/expenses'),
+            api.get<{ brands: Brand[] }>('/api/brands'),
+            api.get<{ dealerships: Dealership[] }>('/api/dealerships'),
+          ]);
+          setExpenses(e.expenses);
+          setBrands(b.brands);
+          setDealerships(d.dealerships);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
     load();
   }, []);
+
+  if (loading) return <div><h1 className="page-title">{t('fin.expenses')}</h1><Loading /></div>;
+  if (error) return <div><h1 className="page-title">{t('fin.expenses')}</h1><ErrorState message={error} onRetry={load} /></div>;
 
   return (
     <div>
@@ -63,6 +77,7 @@ export function ExpensesPage() {
                 <td><span className={`pill ${e.status === 'PAID' ? 'pill-sold' : 'pill-visit-planned'}`}>{t(`fin.${e.status.toLowerCase()}`)}</span></td>
               </tr>
             ))}
+            {expenses.length === 0 && (<tr><td colSpan={7}><EmptyState /></td></tr>)}
           </tbody>
         </table>
       </div>

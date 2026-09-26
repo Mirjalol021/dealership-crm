@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
+import { Loading, ErrorState } from '../components/AsyncState';
 import type { ListLead } from '../lib/leadTypes';
 import type { Brand } from '../lib/types';
 import { LeadAddModal } from '../components/LeadAddModal';
@@ -42,23 +43,36 @@ export function MyLeadsPage({ initialFilter = 'new', titleKey = 'nav.myLeads' }:
     api.get<{ brands: Brand[] }>('/api/brands').then((r) => setBrands(r.brands));
   }, []);
 
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   async function load() {
-    const q = new URLSearchParams();
-    const f = QUICK.find((x) => x.key === active);
-    if (f && 'pipeline' in f && f.pipeline) q.set('pipeline', f.pipeline);
-    if (f && 'filter' in f && f.filter) q.set('filter', f.filter);
-    if (f && 'result' in f && f.result) q.set('result', f.result);
-    if (brandId) q.set('brandId', brandId);
-    if (source) q.set('source', source);
-    if (model) q.set('model', model);
-    if (from) q.set('from', from);
-    const r = await api.get<{ leads: ListLead[] }>(`/api/leads?${q.toString()}`);
-    setLeads(r.leads);
+    setLoading(true); setError(null);
+    try {
+          const q = new URLSearchParams();
+          const f = QUICK.find((x) => x.key === active);
+          if (f && 'pipeline' in f && f.pipeline) q.set('pipeline', f.pipeline);
+          if (f && 'filter' in f && f.filter) q.set('filter', f.filter);
+          if (f && 'result' in f && f.result) q.set('result', f.result);
+          if (brandId) q.set('brandId', brandId);
+          if (source) q.set('source', source);
+          if (model) q.set('model', model);
+          if (from) q.set('from', from);
+          const r = await api.get<{ leads: ListLead[] }>(`/api/leads?${q.toString()}`);
+          setLeads(r.leads);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
     load();
   }, [active, brandId, source, model, from]);
+
+  if (loading) return <div><h1 className="page-title">{t(titleKey)}</h1><Loading /></div>;
+  if (error) return <div><h1 className="page-title">{t(titleKey)}</h1><ErrorState message={error} onRetry={load} /></div>;
 
   return (
     <div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
+import { Loading, ErrorState, EmptyState } from '../components/AsyncState';
 import type { Sale } from '../lib/vehicleTypes';
 import { useAuth } from '../lib/auth';
 import { SaleDetailModal } from '../components/SaleDetailModal';
@@ -15,15 +16,28 @@ export function SoldCarsPage() {
 
   const showCosts = can('costs.view');
 
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   async function load() {
-    const q = discountedOnly ? '?discounted=true' : '';
-    const r = await api.get<{ sales: Sale[] }>(`/api/sales${q}`);
-    setSales(r.sales);
+    setLoading(true); setError(null);
+    try {
+          const q = discountedOnly ? '?discounted=true' : '';
+          const r = await api.get<{ sales: Sale[] }>(`/api/sales${q}`);
+          setSales(r.sales);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
     load();
   }, [discountedOnly]);
+
+  if (loading) return <div><h1 className="page-title">{t('veh.soldCars')}</h1><Loading /></div>;
+  if (error) return <div><h1 className="page-title">{t('veh.soldCars')}</h1><ErrorState message={error} onRetry={load} /></div>;
 
   return (
     <div>
@@ -63,9 +77,7 @@ export function SoldCarsPage() {
                 <td>{s.salesManager ?? '—'}</td>
               </tr>
             ))}
-            {sales.length === 0 && (
-              <tr><td colSpan={showCosts ? 7 : 5} className="muted" style={{ textAlign: 'center', padding: 24 }}>—</td></tr>
-            )}
+            {sales.length === 0 && (<tr><td colSpan={showCosts ? 7 : 5}><EmptyState /></td></tr>)}
           </tbody>
         </table>
       </div>

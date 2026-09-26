@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
+import { Loading, ErrorState } from '../components/AsyncState';
 import type { ServiceVisit, AsSoldCar, AsItem } from '../lib/aftersalesTypes';
 import { useAuth } from '../lib/auth';
 import { formErrorText } from '../lib/formError';
@@ -12,14 +13,27 @@ export function ServiceVisitsPage() {
   const [showAdd, setShowAdd] = useState(false);
   const showCosts = can('costs.view');
 
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   async function load() {
-    const r = await api.get<{ visits: ServiceVisit[] }>('/api/service-visits');
-    setVisits(r.visits);
+    setLoading(true); setError(null);
+    try {
+          const r = await api.get<{ visits: ServiceVisit[] }>('/api/service-visits');
+          setVisits(r.visits);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
     load();
   }, []);
+
+  if (loading) return <div><h1 className="page-title">{t('as.serviceVisits')}</h1><Loading /></div>;
+  if (error) return <div><h1 className="page-title">{t('as.serviceVisits')}</h1><ErrorState message={error} onRetry={load} /></div>;
 
   return (
     <div>

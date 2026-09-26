@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
+import { ErrorState } from '../components/AsyncState';
 import type { ListLead, PipelineStatus } from '../lib/leadTypes';
 import { LeadDetailModal } from '../components/LeadDetailModal';
 import { StatusPill } from './MyLeadsPage';
@@ -31,12 +32,19 @@ export function KanbanPage() {
   const [loading, setLoading] = useState(true);
 
   const canWork = can('leads.take') || can('leads.view.own') || can('leads.view.all');
+  const [error, setError] = useState<string | null>(null);
 
   async function load() {
-    setLoading(true);
-    const r = await api.get<{ leads: ListLead[] }>('/api/leads');
-    setLeads(r.leads);
-    setLoading(false);
+    setLoading(true); setError(null);
+    try {
+          const r = await api.get<{ leads: ListLead[] }>('/api/leads');
+          setLeads(r.leads);
+          setLoading(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -71,6 +79,7 @@ export function KanbanPage() {
   return (
     <div>
       <h1 className="page-title">{t('nav.leads')} — Kanban</h1>
+      {error && <ErrorState message={error} onRetry={load} />}
       {loading ? (
         <div className="loading">{t('common.loading')}</div>
       ) : (

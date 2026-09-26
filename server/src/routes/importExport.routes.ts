@@ -2,21 +2,13 @@ import type { FastifyInstance } from 'fastify';
 import ExcelJS from 'exceljs';
 import { prisma } from '../db.js';
 import { requireAuth, requirePermission } from '../auth/guard.js';
-import { can } from '../auth/permissions.js';
+import { can, type Capability } from '../auth/permissions.js';
 import { scopeWhere } from '../auth/scope.js';
 import { rangeFromQuery, hasRange } from '../lib/dateRange.js';
 import { normalizePhone } from '../lib/phone.js';
 import { findOrCreateCustomer } from '../lib/leadService.js';
 import { logAuditSafe } from '../lib/audit.js';
-
-// Convert rows to CSV (§65).
-function toCsv(headers: string[], rows: (string | number | null)[][]): string {
-  const esc = (v: string | number | null) => {
-    const s = v == null ? '' : String(v);
-    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-  };
-  return [headers.join(','), ...rows.map((r) => r.map(esc).join(','))].join('\n');
-}
+import { toCsv } from '../lib/csv.js';
 
 // Build an Excel workbook (§65).
 async function toXlsx(sheetName: string, headers: string[], rows: (string | number | null)[][]): Promise<Buffer> {
@@ -43,6 +35,17 @@ function pick(r: Record<string, string>, ...keys: string[]): string {
   return '';
 }
 
+// Which capability gates each export type. Prevents a role from pulling data it
+// may not view in the UI (e.g. Call Center exporting finance expenses).
+const EXPORT_CAPABILITY: Record<string, Capability> = {
+  leads: 'leads.view.own',        // both view.own and view.all satisfy this (view.all implies access)
+  sales: 'sales.view',
+  inventory: 'inventory.view',
+  expenses: 'finance.view',
+  stock: 'aftersales.view',
+  aftersales: 'aftersales.view',
+};
+
 export async function importExportRoutes(app: FastifyInstance): Promise<void> {
   // ---------- EXPORT (§65, §66) ----------
   // Query params: type, format (csv|xlsx), and the shared filter bar (§68):
@@ -55,6 +58,16 @@ export async function importExportRoutes(app: FastifyInstance): Promise<void> {
     const format = q.format === 'xlsx' ? 'xlsx' : 'csv';
     const range = rangeFromQuery(q);
     const useRange = hasRange(range);
+
+    // Enforce the per-type capability, scoped to what the role actually holds.
+    const required = EXPORT_CAPABILITY[type];
+    if (!required) {
+      return reply.code(400).send({ error: 'UNKNOWN_TYPE' });
+    }
+    const allowed = can(user.role, required)
+      // Leads can be exported by anyone who may read leads at all (own OR all).
+      || (type === 'leads' && can(user.role, 'leads.view.all'));
+    if (!allowed) return reply.code(403).send({ error: 'FORBIDDEN' });
 
     let headers: string[] = [];
     let rows: (string | number | null)[][] = [];
@@ -207,6 +220,11 @@ export async function importExportRoutes(app: FastifyInstance): Promise<void> {
     const rows = body.rows ?? [];
     if (!Array.isArray(rows) || rows.length === 0) {
       return reply.code(400).send({ error: 'NO_ROWS' });
+    }
+    // Guard against oversized uploads (memory safety / DoS).
+    const MAX_IMPORT_ROWS = 5000;
+    if (rows.length > MAX_IMPORT_ROWS) {
+      return reply.code(413).send({ error: 'TOO_MANY_ROWS', limit: MAX_IMPORT_ROWS });
     }
 
     const preview: PreviewRow[] = [];

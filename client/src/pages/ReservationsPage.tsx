@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
+import { Loading, ErrorState, EmptyState } from '../components/AsyncState';
 import type { Reservation } from '../lib/vehicleTypes';
 import { useAuth } from '../lib/auth';
 
@@ -10,9 +11,19 @@ export function ReservationsPage() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const canManage = can('sales.manage');
 
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   async function load() {
-    const r = await api.get<{ reservations: Reservation[] }>('/api/reservations');
-    setReservations(r.reservations);
+    setLoading(true); setError(null);
+    try {
+          const r = await api.get<{ reservations: Reservation[] }>('/api/reservations');
+          setReservations(r.reservations);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -23,6 +34,9 @@ export function ReservationsPage() {
     await api.post(`/api/reservations/${id}/cancel`);
     load();
   }
+
+  if (loading) return <div><h1 className="page-title">{t('veh.reservations')}</h1><Loading /></div>;
+  if (error) return <div><h1 className="page-title">{t('veh.reservations')}</h1><ErrorState message={error} onRetry={load} /></div>;
 
   return (
     <div>
@@ -58,9 +72,7 @@ export function ReservationsPage() {
                 </td>
               </tr>
             ))}
-            {reservations.length === 0 && (
-              <tr><td colSpan={8} className="muted" style={{ textAlign: 'center', padding: 24 }}>—</td></tr>
-            )}
+            {reservations.length === 0 && (<tr><td colSpan={8}><EmptyState /></td></tr>)}
           </tbody>
         </table>
       </div>

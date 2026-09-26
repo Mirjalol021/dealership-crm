@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
+import { Loading, ErrorState, EmptyState } from '../components/AsyncState';
 import { AS_CATEGORIES, UNITS, type AsItem } from '../lib/aftersalesTypes';
 import type { Dealership } from '../lib/types';
 import { useAuth } from '../lib/auth';
@@ -18,18 +19,31 @@ export function AfterSalesInventoryPage() {
 
   const showCosts = can('costs.view');
 
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   async function load() {
-    const [i, d] = await Promise.all([
-      api.get<{ items: AsItem[] }>('/api/aftersales/items'),
-      api.get<{ dealerships: Dealership[] }>('/api/dealerships'),
-    ]);
-    setItems(i.items);
-    setDealerships(d.dealerships);
+    setLoading(true); setError(null);
+    try {
+          const [i, d] = await Promise.all([
+            api.get<{ items: AsItem[] }>('/api/aftersales/items'),
+            api.get<{ dealerships: Dealership[] }>('/api/dealerships'),
+          ]);
+          setItems(i.items);
+          setDealerships(d.dealerships);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
     load();
   }, []);
+
+  if (loading) return <div><h1 className="page-title">{t('as.inventory')}</h1><Loading /></div>;
+  if (error) return <div><h1 className="page-title">{t('as.inventory')}</h1><ErrorState message={error} onRetry={load} /></div>;
 
   return (
     <div>
@@ -72,6 +86,7 @@ export function AfterSalesInventoryPage() {
                 </tr>
               );
             })}
+            {items.length === 0 && (<tr><td colSpan={7}><EmptyState /></td></tr>)}
           </tbody>
         </table>
       </div>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
 import { useAuth } from '../lib/auth';
+import { Loading, ErrorState, EmptyState } from '../components/AsyncState';
 
 interface Movement {
   itemId: string;
@@ -19,11 +20,22 @@ export function StockMovementsPage() {
   const { t } = useTranslation();
   const { can } = useAuth();
   const [movements, setMovements] = useState<Movement[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const showCosts = can('costs.view');
 
-  useEffect(() => {
-    api.get<{ movements: Movement[] }>('/api/aftersales/stock-movements').then((r) => setMovements(r.movements));
-  }, []);
+  function load() {
+    setLoading(true); setError(null);
+    api.get<{ movements: Movement[] }>('/api/aftersales/stock-movements')
+      .then((r) => setMovements(r.movements))
+      .catch((err) => setError(err instanceof Error ? err.message : String(err)))
+      .finally(() => setLoading(false));
+  }
+
+  useEffect(() => { load(); }, []);
+
+  if (loading) return <div><h1 className="page-title">{t('as.stockMovements')}</h1><Loading /></div>;
+  if (error) return <div><h1 className="page-title">{t('as.stockMovements')}</h1><ErrorState message={error} onRetry={load} /></div>;
 
   return (
     <div>
@@ -53,6 +65,7 @@ export function StockMovementsPage() {
                 {showCosts && <td>{m.costOfUsed?.toLocaleString() ?? '—'}</td>}
               </tr>
             ))}
+            {movements.length === 0 && (<tr><td colSpan={showCosts ? 7 : 6}><EmptyState /></td></tr>)}
           </tbody>
         </table>
       </div>

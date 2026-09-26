@@ -30,7 +30,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const clientDist = path.resolve(__dirname, '../../client/dist');
 
 export async function buildServer() {
-  const app = Fastify({ logger: { level: config.isProd ? 'info' : 'debug' } });
+  const app = Fastify({
+    logger: { level: config.isProd ? 'info' : 'debug' },
+    // Cap request bodies (bulk import sends JSON rows). 10MB is ample for 5000 rows
+    // while protecting the process from accidental/malicious oversized payloads.
+    bodyLimit: 10 * 1024 * 1024,
+  });
 
   // Keep the raw body for webhook signature validation (Meta §56).
   // Fastify parses JSON normally, but we also stash a raw string copy so HMACs can be checked.
@@ -55,6 +60,29 @@ export async function buildServer() {
 
   // Attach req.user (if any) to every request before route handlers run.
   app.addHook('onRequest', attachUser);
+
+  // CSRF hardening: for state-changing requests, verify the Origin/Referer points
+  // at an allowed origin. Combined with sameSite=lax cookies this blocks classic
+  // cross-site form/fetch CSRF. Webhooks (no browser Origin) are exempt.
+  const allowedOrigins = config.isProd ? config.corsOrigins : [];
+  app.addHook('onRequest', async (req, reply) => {
+    const method = req.method.toUpperCase();
+    if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') return;
+    // Webhook endpoints authenticate via signatures, not cookies — skip.
+    if (req.url.startsWith('/api/webhooks/')) return;
+    const origin = (req.headers.origin as string | undefined) ?? '';
+    const referer = (req.headers.referer as string | undefined) ?? '';
+    const source = origin || (referer ? new URL(referer).origin : '');
+    // No Origin/Referer: non-browser client (curl, mobile app). Cookie is sameSite=lax,
+    // so a cross-site browser request would carry Origin — safe to allow here.
+    if (!source) return;
+    if (config.isProd) {
+      if (!allowedOrigins.includes(source)) {
+        return reply.code(403).send({ error: 'CSRF_ORIGIN_REJECTED' });
+      }
+    }
+    // In development any origin is allowed (Vite dev server on a different port).
+  });
 
   // Centralized error handling + SPA fallback (when the client bundle exists).
   // The not-found handler returns JSON for /api/* and serves index.html otherwise.

@@ -48,12 +48,22 @@ Or start both together from the repo root:
 
 ## Tests
 
-Unit tests cover the pure calculation logic (finance engine) and the shared
-date-range helper used by reports, analytics and exports.
+**Unit tests** cover the pure logic: the finance engine, the shared date-range
+helper, data scoping, phone normalisation, Meta webhook signature verification,
+CSV formula-injection guard and the login throttle.
 
 ```bash
 cd server
-npm test                  # tsx --test tests/*.test.ts
+npm test                  # tsx --test tests/*.test.ts  (52 tests)
+```
+
+**API integration suites** run against a live server (default
+`http://localhost:3000`, override with `CRM_BASE`):
+
+```bash
+cd server
+CRM_BASE=http://localhost:3000 python3 tests/api-deep.py      # RBAC, CRUD, exports (60 checks)
+CRM_BASE=http://localhost:3000 python3 tests/acceptance.py    # acceptance criteria (§81)
 ```
 
 ## Default dev credentials

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
+import { Loading, ErrorState, EmptyState } from '../components/AsyncState';
 import type { CustomerToCall } from '../lib/aftersalesTypes';
 import { NewVisitModal } from './ServiceVisitsPage';
 import { useAuth } from '../lib/auth';
@@ -28,15 +29,28 @@ export function CustomersToCallPage() {
   const { can } = useAuth();
   const canManage = can('aftersales.manage');
 
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   async function load() {
-    const q = bucket ? `?bucket=${bucket}` : '';
-    const r = await api.get<{ customers: CustomerToCall[] }>(`/api/aftersales/customers-to-call${q}`);
-    setCustomers(r.customers);
+    setLoading(true); setError(null);
+    try {
+          const q = bucket ? `?bucket=${bucket}` : '';
+          const r = await api.get<{ customers: CustomerToCall[] }>(`/api/aftersales/customers-to-call${q}`);
+          setCustomers(r.customers);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
     load();
   }, [bucket]);
+
+  if (loading) return <div><h1 className="page-title">{t('as.customersToCall')}</h1><Loading /></div>;
+  if (error) return <div><h1 className="page-title">{t('as.customersToCall')}</h1><ErrorState message={error} onRetry={load} /></div>;
 
   return (
     <div>
@@ -88,9 +102,7 @@ export function CustomersToCallPage() {
                 </tr>
               );
             })}
-            {customers.length === 0 && (
-              <tr><td colSpan={8} className="muted" style={{ textAlign: 'center', padding: 24 }}>—</td></tr>
-            )}
+            {customers.length === 0 && (<tr><td colSpan={8}><EmptyState /></td></tr>)}
           </tbody>
         </table>
       </div>

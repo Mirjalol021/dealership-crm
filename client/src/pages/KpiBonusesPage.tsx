@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
+import { Loading, ErrorState, EmptyState } from '../components/AsyncState';
 import type { KpiBonus } from '../lib/financeTypes';
 import type { Brand } from '../lib/types';
 import { formErrorText } from '../lib/formError';
@@ -11,13 +12,23 @@ export function KpiBonusesPage() {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [showAdd, setShowAdd] = useState(false);
 
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   async function load() {
-    const [b, br] = await Promise.all([
-      api.get<{ bonuses: KpiBonus[] }>('/api/kpi-bonuses'),
-      api.get<{ brands: Brand[] }>('/api/brands'),
-    ]);
-    setBonuses(b.bonuses);
-    setBrands(br.brands);
+    setLoading(true); setError(null);
+    try {
+          const [b, br] = await Promise.all([
+            api.get<{ bonuses: KpiBonus[] }>('/api/kpi-bonuses'),
+            api.get<{ brands: Brand[] }>('/api/brands'),
+          ]);
+          setBonuses(b.bonuses);
+          setBrands(br.brands);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -28,6 +39,9 @@ export function KpiBonusesPage() {
     await api.patch(`/api/kpi-bonuses/${id}`, { status });
     load();
   }
+
+  if (loading) return <div><h1 className="page-title">{t('fin.kpiBonusTitle')}</h1><Loading /></div>;
+  if (error) return <div><h1 className="page-title">{t('fin.kpiBonusTitle')}</h1><ErrorState message={error} onRetry={load} /></div>;
 
   return (
     <div>
@@ -66,9 +80,7 @@ export function KpiBonusesPage() {
               </td>
             </tr>
           ))}
-          {bonuses.length === 0 && (
-            <tr><td colSpan={5} className="muted" style={{ textAlign: 'center', padding: 24 }}>—</td></tr>
-          )}
+          {bonuses.length === 0 && (<tr><td colSpan={5}><EmptyState /></td></tr>)}
         </tbody>
       </table>
 

@@ -4,6 +4,7 @@ import { prisma } from '../db.js';
 import { requireAuth, requirePermission, requireAnyPermission } from '../auth/guard.js';
 import { normalizePhone } from '../lib/phone.js';
 import { findOrCreateCustomer, logActivity, logAssignment, nextAttemptNo } from '../lib/leadService.js';
+import { logAudit } from '../lib/audit.js';
 import { scopeWhere, canAccessScope } from '../auth/scope.js';
 import { rangeFromQuery, hasRange } from '../lib/dateRange.js';
 import type { AuthUser } from '../auth/session.js';
@@ -78,6 +79,8 @@ export async function leadRoutes(app: FastifyInstance): Promise<void> {
     await prisma.$transaction(async (tx) => {
       await logAssignment(tx, id, assignmentType, { toUserId: user.id, assignedById: user.id });
       await logActivity(tx, id, 'LEAD_TAKEN', user.id, null, user.id);
+      await logAudit(tx, { actorId: user.id, entity: 'Lead', entityId: id, action: 'UPDATE',
+        summary: 'Lead taken from pool', newValue: { assignedUserId: user.id } });
     });
 
     return reply.send({ ok: true });
@@ -116,6 +119,9 @@ export async function leadRoutes(app: FastifyInstance): Promise<void> {
       });
       await logActivity(tx, id, lead.assignedUserId ? 'LEAD_REASSIGNED' : 'LEAD_ASSIGNED',
         user.id, lead.assignedUserId, parsed.data.toUserId);
+      await logAudit(tx, { actorId: user.id, entity: 'Lead', entityId: id, action: 'UPDATE',
+        summary: lead.assignedUserId ? 'Lead reassigned' : 'Lead assigned',
+        oldValue: { assignedUserId: lead.assignedUserId }, newValue: { assignedUserId: parsed.data.toUserId } });
     });
 
     return reply.send({ ok: true });
@@ -246,6 +252,9 @@ export async function leadRoutes(app: FastifyInstance): Promise<void> {
       });
       await logActivity(tx, created.id, 'LEAD_CREATED', user.id);
       await logAssignment(tx, created.id, 'SELF_PICK', { toUserId: user.id, assignedById: user.id });
+      await logAudit(tx, { actorId: user.id, entity: 'Lead', entityId: created.id, action: 'CREATE',
+        summary: 'Lead created (manual/organic)',
+        newValue: { dealershipId: d.dealershipId, brandId: d.brandId, source: d.source, assignedUserId: user.id } });
       if (d.note) {
         await tx.leadComment.create({ data: { leadId: created.id, authorId: user.id, text: d.note } });
       }
@@ -387,6 +396,11 @@ export async function leadRoutes(app: FastifyInstance): Promise<void> {
         await tx.leadComment.create({ data: { leadId: id, authorId: user.id, text: d.comment } });
         await logActivity(tx, id, 'COMMENT_ADDED', user.id);
       }
+      await logAudit(tx, { actorId: user.id, entity: 'Lead', entityId: id,
+        action: newPipeline !== lead.pipelineStatus ? 'STATUS_CHANGE' : 'UPDATE',
+        summary: `Lead result: ${d.result}`,
+        oldValue: { pipelineStatus: lead.pipelineStatus, lastResult: lead.lastResult },
+        newValue: { pipelineStatus: newPipeline, lastResult: d.result } });
     });
 
     // Return next lead for Save & Next flow (§16).

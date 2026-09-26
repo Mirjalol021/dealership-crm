@@ -11,7 +11,7 @@ import http.cookiejar
 import random
 
 import os
-BASE = os.environ.get("CRM_BASE", "https://par-olive-stage-join.trycloudflare.com")
+BASE = os.environ.get("CRM_BASE", "http://localhost:3000")
 results = []
 
 
@@ -27,6 +27,9 @@ class Session:
         if body is not None:
             data = json.dumps(body).encode() if isinstance(body, (dict, list)) else body
             headers["Content-Type"] = "application/json"
+        tok = next((c.value for c in self.jar if c.name == "crm_session"), None)
+        if tok:
+            headers["Cookie"] = "crm_session=" + tok
         r = urllib.request.Request(url, data=data, headers=headers, method=method)
         try:
             with self.opener.open(r, timeout=25) as resp:

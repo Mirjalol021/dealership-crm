@@ -346,3 +346,32 @@ legend { font-size: 12px; color: var(--muted); padding: 0 4px; }
 .page-head-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .export-inline { display: flex; gap: 6px; }
 .export-inline .btn-ghost.sm { white-space: nowrap; }
+
+/* ---- Async state (loading / error / empty) ---- */
+.async-state {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px;
+  justify-content: center;
+}
+.async-state.empty-state { color: var(--muted, #888); }
+.error-state {
+  flex-wrap: wrap;
+  justify-content: space-between;
+  background: rgba(220, 38, 38, 0.08);
+  border: 1px solid rgba(220, 38, 38, 0.35);
+  border-radius: 8px;
+  margin: 8px 0;
+}
+.error-state-msg { display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(120, 120, 120, 0.35);
+  border-top-color: var(--accent, #4f46e5);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }

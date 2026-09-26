@@ -1,22 +1,23 @@
-import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
 import type { Sale } from '../lib/vehicleTypes';
 import { useAuth } from '../lib/auth';
+import { useAsync } from '../lib/useAsync';
+import { Loading, ErrorState, EmptyState } from '../components/AsyncState';
 
 // Super Admin / Head of Sales "Sales" landing (§77) — a focused overview of sold cars.
 export function SalesPage() {
   const { t } = useTranslation();
   const { can } = useAuth();
-  const [sales, setSales] = useState<Sale[]>([]);
   const showCosts = can('costs.view');
-
-  useEffect(() => {
-    api.get<{ sales: Sale[] }>('/api/sales').then((r) => setSales(r.sales));
-  }, []);
+  const { data, loading, error, reload } = useAsync(() => api.get<{ sales: Sale[] }>('/api/sales'), []);
+  const sales = data?.sales ?? [];
 
   const total = sales.length;
   const discounted = sales.filter((s) => s.discountedSale).length;
+
+  if (loading) return <div><h1 className="page-title">{t('nav.sales')}</h1><Loading /></div>;
+  if (error) return <div><h1 className="page-title">{t('nav.sales')}</h1><ErrorState message={error} onRetry={reload} /></div>;
 
   return (
     <div>
@@ -51,7 +52,7 @@ export function SalesPage() {
                 <td>{s.salesManager ?? '—'}</td>
               </tr>
             ))}
-            {sales.length === 0 && <tr><td colSpan={showCosts ? 6 : 5} className="muted" style={{ textAlign: 'center', padding: 24 }}>—</td></tr>}
+            {sales.length === 0 && <tr><td colSpan={showCosts ? 6 : 5}><EmptyState /></td></tr>}
           </tbody>
         </table>
       </div>

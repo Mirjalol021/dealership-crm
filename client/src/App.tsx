@@ -35,6 +35,11 @@ function guarded(capability: string, node: ReactNode) {
   return <ProtectedRoute capability={capability}>{node}</ProtectedRoute>;
 }
 
+// Access granted if the user holds ANY of the listed capabilities (e.g. reports).
+function guardedAny(capabilities: string[], node: ReactNode) {
+  return <ProtectedRoute anyCapability={capabilities}>{node}</ProtectedRoute>;
+}
+
 function Home() {
   const { user } = useAuth();
   if (!user) return null;
@@ -62,7 +67,7 @@ export function App() {
         <Route path="/new-leads" element={guarded('leads.view.own', <MyLeadsPage initialFilter="new" titleKey="nav.newLeads" />)} />
         <Route path="/follow-ups" element={guarded('leads.view.own', <MyLeadsPage initialFilter="call_today" titleKey="nav.followUps" />)} />
         <Route path="/qualified" element={guarded('leads.assign', <LeadPoolPage titleKey="nav.qualified" />)} />
-        <Route path="/appointments" element={<AppointmentsPage />} />
+        <Route path="/appointments" element={guardedAny(['leads.view.own', 'leads.view.all', 'sales.view', 'aftersales.view'], <AppointmentsPage />)} />
         <Route path="/management" element={guarded('leads.view.all', <ManagementPage />)} />
         <Route path="/inventory" element={guarded('inventory.view', <InventoryPage />)} />
         <Route path="/reservations" element={guarded('sales.view', <ReservationsPage />)} />
@@ -78,7 +83,7 @@ export function App() {
         <Route path="/sold-cars-finance" element={guarded('finance.view', <SoldCarsPage />)} />
         <Route path="/distributor-bonuses" element={guarded('finance.view', <KpiBonusesPage />)} />
         <Route path="/finance/settings" element={guarded('finance.manage', <FinanceSettingsPage />)} />
-        <Route path="/reports" element={<ReportsPage />} />
+        <Route path="/reports" element={guardedAny(['reports.sales', 'reports.marketing', 'reports.finance', 'reports.aftersales', 'inventory.view'], <ReportsPage />)} />
         <Route path="/import" element={guarded('settings.manage', <ImportPage />)} />
         <Route path="/lead-forms" element={guarded('settings.manage', <LeadFormsPage />)} />
         <Route path="/users" element={guarded('users.manage', <UsersPage />)} />

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
+import { Loading, ErrorState, EmptyState } from '../components/AsyncState';
 import { LeadDetailModal } from '../components/LeadDetailModal';
 
 interface Appt {
@@ -23,10 +24,20 @@ export function AppointmentsPage() {
   const [openLead, setOpenLead] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState('');
 
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   async function load() {
-    const q = statusFilter ? `?status=${statusFilter}` : '';
-    const r = await api.get<{ appointments: Appt[] }>(`/api/appointments${q}`);
-    setAppts(r.appointments);
+    setLoading(true); setError(null);
+    try {
+          const q = statusFilter ? `?status=${statusFilter}` : '';
+          const r = await api.get<{ appointments: Appt[] }>(`/api/appointments${q}`);
+          setAppts(r.appointments);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -37,6 +48,9 @@ export function AppointmentsPage() {
     await api.patch(`/api/appointments/${id}`, { status });
     load();
   }
+
+  if (loading) return <div><h1 className="page-title">{t('nav.appointments')}</h1><Loading /></div>;
+  if (error) return <div><h1 className="page-title">{t('nav.appointments')}</h1><ErrorState message={error} onRetry={load} /></div>;
 
   return (
     <div>
@@ -82,9 +96,7 @@ export function AppointmentsPage() {
                 <td><button className="btn-ghost sm" onClick={() => setOpenLead(a.leadId)}>{t('lead.open')}</button></td>
               </tr>
             ))}
-            {appts.length === 0 && (
-              <tr><td colSpan={8} className="muted" style={{ textAlign: 'center', padding: 24 }}>—</td></tr>
-            )}
+            {appts.length === 0 && (<tr><td colSpan={8}><EmptyState /></td></tr>)}
           </tbody>
         </table>
       </div>

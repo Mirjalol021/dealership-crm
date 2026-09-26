@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
+import { ErrorState } from '../components/AsyncState';
 import type { PoolLead } from '../lib/leadTypes';
 import { AssignModal } from '../components/AssignModal';
 import { useAuth } from '../lib/auth';
@@ -14,12 +15,19 @@ export function LeadPoolPage({ titleKey = 'lead.pool' }: { titleKey?: string } =
   const [assignId, setAssignId] = useState<string | null>(null);
 
   const canAssign = can('leads.assign');
+  const [error, setError] = useState<string | null>(null);
 
   async function load() {
-    setLoading(true);
-    const r = await api.get<{ leads: PoolLead[] }>('/api/leads/pool');
-    setLeads(r.leads);
-    setLoading(false);
+    setLoading(true); setError(null);
+    try {
+          const r = await api.get<{ leads: PoolLead[] }>('/api/leads/pool');
+          setLeads(r.leads);
+          setLoading(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -41,6 +49,7 @@ export function LeadPoolPage({ titleKey = 'lead.pool' }: { titleKey?: string } =
     <div>
       <h1 className="page-title">{t(titleKey)}</h1>
       {msg && <div className="error">{msg}</div>}
+      {error && <ErrorState message={error} onRetry={load} />}
       {loading ? (
         <div className="loading">{t('common.loading')}</div>
       ) : leads.length === 0 ? (

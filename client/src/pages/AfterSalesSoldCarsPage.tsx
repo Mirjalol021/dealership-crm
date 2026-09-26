@@ -2,14 +2,26 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
 import type { AsSoldCar } from '../lib/aftersalesTypes';
+import { Loading, ErrorState, EmptyState } from '../components/AsyncState';
 
 export function AfterSalesSoldCarsPage() {
   const { t } = useTranslation();
   const [cars, setCars] = useState<AsSoldCar[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    api.get<{ cars: AsSoldCar[] }>('/api/aftersales/sold-cars').then((r) => setCars(r.cars));
-  }, []);
+  function load() {
+    setLoading(true); setError(null);
+    api.get<{ cars: AsSoldCar[] }>('/api/aftersales/sold-cars')
+      .then((r) => setCars(r.cars))
+      .catch((err) => setError(err instanceof Error ? err.message : String(err)))
+      .finally(() => setLoading(false));
+  }
+
+  useEffect(() => { load(); }, []);
+
+  if (loading) return <div><h1 className="page-title">{t('as.soldCarsDb')}</h1><Loading /></div>;
+  if (error) return <div><h1 className="page-title">{t('as.soldCarsDb')}</h1><ErrorState message={error} onRetry={load} /></div>;
 
   return (
     <div>
@@ -41,9 +53,7 @@ export function AfterSalesSoldCarsPage() {
                 <td>{c.nextServiceDate ? new Date(c.nextServiceDate).toLocaleDateString() : '—'}</td>
               </tr>
             ))}
-            {cars.length === 0 && (
-              <tr><td colSpan={8} className="muted" style={{ textAlign: 'center', padding: 24 }}>—</td></tr>
-            )}
+            {cars.length === 0 && (<tr><td colSpan={8}><EmptyState /></td></tr>)}
           </tbody>
         </table>
       </div>

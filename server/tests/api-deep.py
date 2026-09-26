@@ -9,7 +9,8 @@ import urllib.request
 import urllib.error
 import http.cookiejar
 
-BASE = "https://par-olive-stage-join.trycloudflare.com"
+import os
+BASE = os.environ.get("CRM_BASE", "http://localhost:3000")
 results = []
 
 
@@ -32,6 +33,9 @@ class Session:
                 headers["Content-Type"] = "application/json"
             else:
                 data = body.encode() if isinstance(body, str) else body
+        tok = next((c.value for c in self.jar if c.name == "crm_session"), None)
+        if tok:
+            headers["Cookie"] = "crm_session=" + tok
         r = urllib.request.Request(url, data=data, headers=headers, method=method)
         try:
             with self.opener.open(r, timeout=20) as resp:

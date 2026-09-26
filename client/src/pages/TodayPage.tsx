@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
+import { Loading, ErrorState } from '../components/AsyncState';
 import type { LeadResult, ListLead, TodayCounts } from '../lib/leadTypes';
 import { ResultButtons } from '../components/ResultButtons';
 import { LeadDetailPanel } from '../components/LeadDetailPanel';
@@ -11,14 +12,22 @@ export function TodayPage() {
   const [leads, setLeads] = useState<ListLead[]>([]);
   const [current, setCurrent] = useState<ListLead | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   async function load() {
-    setLoading(true);
-    const r = await api.get<{ counts: TodayCounts; leads: ListLead[] }>('/api/leads/today');
-    setCounts(r.counts);
-    setLeads(r.leads);
-    setCurrent(r.leads[0] ?? null);
-    setLoading(false);
+    setLoading(true); setError(null);
+    try {
+          setLoading(true);
+          const r = await api.get<{ counts: TodayCounts; leads: ListLead[] }>('/api/leads/today');
+          setCounts(r.counts);
+          setLeads(r.leads);
+          setCurrent(r.leads[0] ?? null);
+          setLoading(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -30,6 +39,9 @@ export function TodayPage() {
     setLeads(rest);
     setCurrent(rest[0] ?? null);
   }
+
+  if (loading) return <div><h1 className="page-title">{t('lead.today')}</h1><Loading /></div>;
+  if (error) return <div><h1 className="page-title">{t('lead.today')}</h1><ErrorState message={error} onRetry={load} /></div>;
 
   return (
     <div>

@@ -8,6 +8,7 @@ import { useAuth } from '../lib/auth';
 import { ReserveModal } from '../components/ReserveModal';
 import { SellModal } from '../components/SellModal';
 import { ExportButtons } from '../components/ExportButtons';
+import { Loading, ErrorState, EmptyState } from '../components/AsyncState';
 
 export function InventoryPage() {
   const { t } = useTranslation();
@@ -18,18 +19,28 @@ export function InventoryPage() {
   const [showAdd, setShowAdd] = useState(false);
   const [reserveId, setReserveId] = useState<string | null>(null);
   const [sellVehicle, setSellVehicle] = useState<Vehicle | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const canManage = can('inventory.manage');
   const canSell = can('sales.manage');
 
   async function load() {
-    const q = statusFilter ? `?status=${statusFilter}` : '';
-    const [v, s] = await Promise.all([
-      api.get<{ vehicles: Vehicle[] }>(`/api/inventory${q}`),
-      api.get<{ summary: typeof summary }>('/api/inventory/summary'),
-    ]);
-    setVehicles(v.vehicles);
-    setSummary(s.summary);
+    setLoading(true);
+    setError(null);
+    try {
+      const q = statusFilter ? `?status=${statusFilter}` : '';
+      const [v, s] = await Promise.all([
+        api.get<{ vehicles: Vehicle[] }>(`/api/inventory${q}`),
+        api.get<{ summary: typeof summary }>('/api/inventory/summary'),
+      ]);
+      setVehicles(v.vehicles);
+      setSummary(s.summary);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -48,6 +59,9 @@ export function InventoryPage() {
         </div>
       </div>
 
+      {error && <ErrorState message={error} onRetry={load} />}
+      {loading ? <Loading /> : (
+      <>
       <div className="stat-row three">
         <button className={`stat clickable${statusFilter === 'AVAILABLE' ? ' sel' : ''}`} onClick={() => setStatusFilter(statusFilter === 'AVAILABLE' ? '' : 'AVAILABLE')}>
           <div className="stat-value">{summary.AVAILABLE}</div>
@@ -108,12 +122,14 @@ export function InventoryPage() {
                 </td>
               </tr>
             ))}
-            {vehicles.length === 0 && (
-              <tr><td colSpan={8} className="muted" style={{ textAlign: 'center', padding: 24 }}>—</td></tr>
+            {vehicles.length === 0 && !loading && (
+              <tr><td colSpan={8}><EmptyState /></td></tr>
             )}
           </tbody>
         </table>
       </div>
+      </>
+      )}
 
       {showAdd && <AddVehicleModal onClose={() => setShowAdd(false)} onSaved={() => { setShowAdd(false); load(); }} />}
       {reserveId && <ReserveModal vehicleId={reserveId} onClose={() => setReserveId(null)} onSaved={() => { setReserveId(null); load(); }} />}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
+import { Loading, ErrorState, EmptyState } from '../components/AsyncState';
 import { formErrorText } from '../lib/formError';
 import type { Brand, Dealership } from '../lib/types';
 
@@ -20,20 +21,33 @@ export function LeadFormsPage() {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [dealerships, setDealerships] = useState<Dealership[]>([]);
 
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   async function load() {
-    const [i, b, d] = await Promise.all([
-      api.get<{ forms: LeadForm[] }>('/api/integrations'),
-      api.get<{ brands: Brand[] }>('/api/brands'),
-      api.get<{ dealerships: Dealership[] }>('/api/dealerships'),
-    ]);
-    setForms(i.forms);
-    setBrands(b.brands);
-    setDealerships(d.dealerships);
+    setLoading(true); setError(null);
+    try {
+          const [i, b, d] = await Promise.all([
+            api.get<{ forms: LeadForm[] }>('/api/integrations'),
+            api.get<{ brands: Brand[] }>('/api/brands'),
+            api.get<{ dealerships: Dealership[] }>('/api/dealerships'),
+          ]);
+          setForms(i.forms);
+          setBrands(b.brands);
+          setDealerships(d.dealerships);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
     load();
   }, []);
+
+  if (loading) return <div><h1 className="page-title">{t('rep.leadForms')}</h1><Loading /></div>;
+  if (error) return <div><h1 className="page-title">{t('rep.leadForms')}</h1><ErrorState message={error} onRetry={load} /></div>;
 
   return (
     <div>
@@ -59,7 +73,7 @@ export function LeadFormsPage() {
                   </td>
                 </tr>
               ))}
-              {forms.length === 0 && <tr><td colSpan={5} className="muted" style={{ textAlign: 'center', padding: 20 }}>—</td></tr>}
+              {forms.length === 0 && <tr><td colSpan={5}><EmptyState /></td></tr>}
             </tbody>
           </table>
         </div>
