@@ -5,6 +5,7 @@ import type { LeadDetail, LeadResult } from '../lib/leadTypes';
 import { ResultButtons } from './ResultButtons';
 import { AssignModal } from './AssignModal';
 import { useAuth } from '../lib/auth';
+import { FollowUpPicker, presetKindFor } from './FollowUpPicker';
 
 // Full lead detail modal with contact-result entry (§12, §14, §19-§22).
 // Used from My Leads, Kanban and management drill-downs, so managers can work a
@@ -38,6 +39,8 @@ export function LeadDetailModal({ leadId, onClose }: { leadId: string; onClose: 
   const needsFollowUp = ['NO_ANSWER', 'CLIENT_BUSY', 'INFO_GIVEN_THINKING', 'INFO_GIVEN_VISIT_EXPECTED'].includes(result ?? '');
   const followUpRequired = result === 'CLIENT_BUSY' || result === 'NO_ANSWER';
   const needsAppointment = result === 'VISIT_PLANNED';
+  // §14 — quick follow-up presets depend on the chosen result.
+  const presetKind = presetKindFor(result);
 
   const canWork = can('leads.take') || can('leads.view.own') || can('leads.view.all');
   const canAssign = can('leads.assign');
@@ -117,14 +120,17 @@ export function LeadDetailModal({ leadId, onClose }: { leadId: string; onClose: 
                 <ResultButtons onPick={setResult} active={result} />
 
                 {needsFollowUp && (
-                  <label className="followup-label">
+                  <div className="followup-label">
                     {t('lead.followUp')} {followUpRequired && <span className="req">*</span>}
+                    {presetKind && presetKind !== 'visit_planned' && (
+                      <FollowUpPicker kind={presetKind} onChange={setFollowUp} />
+                    )}
                     <input
                       type="datetime-local"
                       value={followUp}
                       onChange={(e) => setFollowUp(e.target.value)}
                     />
-                  </label>
+                  </div>
                 )}
 
                 {needsAppointment && (

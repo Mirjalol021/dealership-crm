@@ -509,5 +509,14 @@
     "uz": "O'zbek",
     "ru": "Русский",
     "en": "English"
+  },
+  "follow": {
+    "laterToday": "Bugun keyinroq",
+    "tomorrow": "Ertaga",
+    "in2Days": "2 kundan keyin",
+    "in3Days": "3 kundan keyin",
+    "in1Week": "1 haftadan keyin",
+    "thisWeek": "Shu hafta",
+    "nextWeek": "Keyingi hafta"
   }
 }

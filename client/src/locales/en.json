@@ -509,5 +509,14 @@
     "uz": "O'zbek",
     "ru": "Русский",
     "en": "English"
+  },
+  "follow": {
+    "laterToday": "Later today",
+    "tomorrow": "Tomorrow",
+    "in2Days": "In 2 days",
+    "in3Days": "In 3 days",
+    "in1Week": "In 1 week",
+    "thisWeek": "This week",
+    "nextWeek": "Next week"
   }
 }

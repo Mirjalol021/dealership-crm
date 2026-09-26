@@ -375,3 +375,12 @@ legend { font-size: 12px; color: var(--muted); padding: 0 4px; }
   display: inline-block;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---- §14 follow-up presets ---- */
+.preset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0;
+}
+.preset-row .chip { font-size: 12px; padding: 4px 10px; }
