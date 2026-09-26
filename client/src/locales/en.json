@@ -517,5 +517,23 @@
     "in1Week": "In 1 week",
     "thisWeek": "This week",
     "nextWeek": "Next week"
+  },
+  "brand": {
+    "tagline": "Electric power in motion",
+    "heroTitle": "Dealership management system",
+    "heroSubtitle": "Leads, sales, finance and service — all in one modern dashboard.",
+    "notifications": "Notifications",
+    "profile": "Profile"
+  },
+  "notif": {
+    "title": "Notifications",
+    "empty": "No new notifications",
+    "overdue": "Overdue follow-ups",
+    "appointmentsToday": "Appointments today",
+    "serviceDue": "Service due soon",
+    "visitPlanned": "Visits planned",
+    "pool": "Unassigned leads in pool",
+    "markAllRead": "Mark all as read",
+    "viewAll": "View all"
   }
 }

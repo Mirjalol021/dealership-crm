@@ -517,5 +517,23 @@
     "in1Week": "1 haftadan keyin",
     "thisWeek": "Shu hafta",
     "nextWeek": "Keyingi hafta"
+  },
+  "brand": {
+    "tagline": "Elektr haydov quvvati",
+    "heroTitle": "Dilerlik boshqaruv tizimi",
+    "heroSubtitle": "Lidlar, savdo, moliya va servis — barchasi bitta zamonaviy panelda.",
+    "notifications": "Bildirishnomalar",
+    "profile": "Profil"
+  },
+  "notif": {
+    "title": "Bildirishnomalar",
+    "empty": "Yangi bildirishnomalar yo'q",
+    "overdue": "Muddati o'tgan qo'ng'iroqlar",
+    "appointmentsToday": "Bugungi uchrashuvlar",
+    "serviceDue": "Servis muddati yaqinlashdi",
+    "visitPlanned": "Tashrif rejalashtirilgan",
+    "pool": "Hovuzda taqsimlanmagan lidlar",
+    "markAllRead": "Barchasini o'qilgan deb belgilash",
+    "viewAll": "Hammasini ko'rish"
   }
 }

@@ -5,6 +5,7 @@ import { useAuth } from '../lib/auth';
 import { ApiError } from '../api/client';
 import { homeForRole } from '../lib/navigation';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
+import { Icon } from '../components/Icons';
 
 export function LoginPage() {
   const { t } = useTranslation();
@@ -45,40 +46,62 @@ export function LoginPage() {
   }
 
   return (
-    <div className="login-page">
-      <div className="login-card">
-        <div className="login-head">
-          <span className="brand-mark">CRM</span>
-          <h1>{t('app.name')}</h1>
+    <div className="login-page login-split">
+      {/* Left: brand / hero panel with the car */}
+      <aside className="login-hero">
+        <div className="login-hero-inner">
+          <div className="login-hero-brand">
+            <span className="brand-mark">MG</span>
+            <span className="brand-name">{t('app.name')}</span>
+          </div>
+          <h2 className="login-hero-title">{t('brand.heroTitle')}</h2>
+          <p className="login-hero-sub">{t('brand.heroSubtitle')}</p>
+          <div className="login-hero-badges">
+            <span className="hero-badge">{Icon.Leads({ size: 14 })} Leads</span>
+            <span className="hero-badge">{Icon.Car({ size: 14 })} Inventory</span>
+            <span className="hero-badge">{Icon.Coin({ size: 14 })} Finance</span>
+            <span className="hero-badge">{Icon.Wrench({ size: 14 })} Service</span>
+          </div>
         </div>
-        <form onSubmit={submit}>
-          <label>
-            {t('auth.email')}
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="username"
-              required
-            />
-          </label>
-          <label>
-            {t('auth.password')}
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              required
-            />
-          </label>
-          {error && <div className="error">{error}</div>}
-          <button className="btn-primary" type="submit" disabled={busy}>
-            {busy ? t('auth.signingIn') : t('auth.login')}
-          </button>
-        </form>
-        <div className="login-foot">
-          <LanguageSwitcher />
+      </aside>
+
+      {/* Right: login form */}
+      <div className="login-form-side">
+        <div className="login-card">
+          <div className="login-head">
+            <span className="brand-mark">MG</span>
+            <h1>{t('app.name')}</h1>
+            <p className="muted small" style={{ margin: '6px 0 0' }}>{t('brand.tagline')}</p>
+          </div>
+          <form onSubmit={submit}>
+            <label>
+              {t('auth.email')}
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="username"
+                required
+              />
+            </label>
+            <label>
+              {t('auth.password')}
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                required
+              />
+            </label>
+            {error && <div className="error">{error}</div>}
+            <button className="btn-primary" type="submit" disabled={busy}>
+              {busy ? t('auth.signingIn') : t('auth.login')}
+            </button>
+          </form>
+          <div className="login-foot">
+            <LanguageSwitcher />
+          </div>
         </div>
       </div>
     </div>

@@ -24,6 +24,7 @@ import { reportRoutes } from './routes/reports.routes.js';
 import { importExportRoutes } from './routes/importExport.routes.js';
 import { dashboardRoutes } from './routes/dashboard.routes.js';
 import { auditRoutes } from './routes/audit.routes.js';
+import { notificationRoutes } from './routes/notifications.routes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // Built React app lives at <repo>/client/dist (server runs from server/ or server/dist/).
@@ -108,6 +109,7 @@ export async function buildServer() {
   await app.register(importExportRoutes);
   await app.register(dashboardRoutes);
   await app.register(auditRoutes);
+  await app.register(notificationRoutes);
 
   if (hasClient) app.log.info(`Serving client bundle from ${clientDist}`);
 
