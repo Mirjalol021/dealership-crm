@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
+import { formErrorText } from '../lib/formError';
 import type { FinanceSettings } from '../lib/financeTypes';
 
 export function FinanceSettingsPage() {
@@ -8,6 +9,7 @@ export function FinanceSettingsPage() {
   const [s, setS] = useState<FinanceSettings | null>(null);
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     api.get<{ settings: FinanceSettings }>('/api/finance/settings').then((r) => setS(r.settings));
@@ -18,9 +20,12 @@ export function FinanceSettingsPage() {
   async function save() {
     setBusy(true);
     setSaved(false);
+    setError('');
     try {
       await api.patch('/api/finance/settings', s);
       setSaved(true);
+    } catch (err) {
+      setError(formErrorText(err));
     } finally {
       setBusy(false);
     }
@@ -47,8 +52,9 @@ export function FinanceSettingsPage() {
           />
           {t('fin.vatInclusive')}
         </label>
+        {error && <div className="error">{error}</div>}
         <button className="btn-primary" disabled={busy} onClick={save}>{t('lead.save')}</button>
-        {saved && <div className="ok-msg">✓ {t('lead.save')}</div>}
+        {saved && <div className="ok-msg">✓ {t('common.saved')}</div>}
       </div>
     </div>
   );

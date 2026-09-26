@@ -1,6 +1,9 @@
 import Fastify from 'fastify';
 import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
+import path from 'node:path';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
 import { attachUser } from './auth/guard.js';
 import { registerErrorHandler } from './lib/errorHandler.js';
@@ -21,6 +24,10 @@ import { reportRoutes } from './routes/reports.routes.js';
 import { importExportRoutes } from './routes/importExport.routes.js';
 import { dashboardRoutes } from './routes/dashboard.routes.js';
 import { auditRoutes } from './routes/audit.routes.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// Built React app lives at <repo>/client/dist (server runs from server/ or server/dist/).
+const clientDist = path.resolve(__dirname, '../../client/dist');
 
 export async function buildServer() {
   const app = Fastify({ logger: { level: config.isProd ? 'info' : 'debug' } });
@@ -49,8 +56,10 @@ export async function buildServer() {
   // Attach req.user (if any) to every request before route handlers run.
   app.addHook('onRequest', attachUser);
 
-  // Centralized error handling: never leak stack traces (§73, hardening).
-  registerErrorHandler(app);
+  // Centralized error handling + SPA fallback (when the client bundle exists).
+  // The not-found handler returns JSON for /api/* and serves index.html otherwise.
+  const hasClient = fs.existsSync(path.join(clientDist, 'index.html'));
+  registerErrorHandler(app, hasClient ? clientDist : undefined);
 
   app.get('/api/health', async () => ({ ok: true, env: config.env }));
 
@@ -71,6 +80,8 @@ export async function buildServer() {
   await app.register(importExportRoutes);
   await app.register(dashboardRoutes);
   await app.register(auditRoutes);
+
+  if (hasClient) app.log.info(`Serving client bundle from ${clientDist}`);
 
   return app;
 }

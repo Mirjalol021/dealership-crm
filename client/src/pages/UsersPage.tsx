@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
 import type { Brand, Dealership, Role } from '../lib/types';
+import { formErrorText } from '../lib/formError';
 
 interface UserRow {
   id: string;
@@ -99,7 +100,7 @@ export function UsersPage() {
       setForm({ ...EMPTY_FORM });
       load();
     } catch (err: unknown) {
-      setError(err instanceof Error && err.message === 'EMAIL_TAKEN' ? t('err.emailTaken') : t('err.generic'));
+      setError(formErrorText(err));
     } finally {
       setBusy(false);
     }
@@ -167,22 +168,22 @@ export function UsersPage() {
               <label>{t('auth.email')}
                 <input type="email" value={form.email} onChange={(e) => set('email', e.target.value)} required disabled={!!editingId} />
               </label>
-              <label>{t('settings.phone')}
+              <label>{t('settings.phone')} <span className="opt">{t('common.optional')}</span>
                 <input value={form.phone} onChange={(e) => set('phone', e.target.value)} />
               </label>
               <label>{t('auth.password')}{editingId && <span className="muted small"> ({t('settings.leaveBlank')})</span>}
                 <input type="password" value={form.password} onChange={(e) => set('password', e.target.value)} minLength={editingId ? 0 : 6} required={!editingId} />
               </label>
-              <label>Role
+              <label>{t('roles.role')}
                 <select value={form.role} onChange={(e) => set('role', e.target.value as Role)}>
                   {ROLES.map((r) => <option key={r} value={r}>{t(`roles.${r}`)}</option>)}
                 </select>
               </label>
               <label>{t('common.language')}
                 <select value={form.preferredLanguage} onChange={(e) => set('preferredLanguage', e.target.value)}>
-                  <option value="uz">O'zbek</option>
-                  <option value="ru">Русский</option>
-                  <option value="en">English</option>
+                  <option value="uz">{t('lang.uz')}</option>
+                  <option value="ru">{t('lang.ru')}</option>
+                  <option value="en">{t('lang.en')}</option>
                 </select>
               </label>
               {editingId && (

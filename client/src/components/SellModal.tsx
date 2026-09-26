@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
+import { formErrorText } from '../lib/formError';
 import type { Vehicle } from '../lib/vehicleTypes';
 
 // Create a Sale from an inventory vehicle (§29).
@@ -30,7 +31,7 @@ export function SellModal({ vehicle, onClose, onSaved }: { vehicle: Vehicle; onC
       ]);
       const brandId = brands.brands.find((b) => b.name === vehicle.brand)?.id;
       const dealershipId = dealerships.dealerships.find((d) => d.dealershipName === vehicle.dealership)?.id;
-      if (!brandId || !dealershipId) { setError('Mapping failed'); setBusy(false); return; }
+      if (!brandId || !dealershipId) { setError(t('err.generic')); setBusy(false); return; }
 
       await api.post('/api/sales', {
         vehicleId: vehicle.id,
@@ -49,8 +50,8 @@ export function SellModal({ vehicle, onClose, onSaved }: { vehicle: Vehicle; onC
         discountComment: discounted ? discountComment || null : null,
       });
       onSaved();
-    } catch {
-      setError(t('err.generic'));
+    } catch (err) {
+      setError(formErrorText(err));
     } finally {
       setBusy(false);
     }
@@ -61,7 +62,7 @@ export function SellModal({ vehicle, onClose, onSaved }: { vehicle: Vehicle; onC
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <h2>{t('veh.sell')}: {vehicle.brand} {vehicle.model}</h2>
         <div className="muted small mono">{vehicle.vin}</div>
-        <label>{t('lead.name')}<input value={name} onChange={(e) => setName(e.target.value)} /></label>
+        <label>{t('lead.name')} <span className="opt">{t('common.optional')}</span><input value={name} onChange={(e) => setName(e.target.value)} /></label>
         <label>{t('lead.phone')} <span className="req">*</span>
           <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+998 90 123 45 67" required />
         </label>
@@ -76,7 +77,7 @@ export function SellModal({ vehicle, onClose, onSaved }: { vehicle: Vehicle; onC
           </select>
         </label>
         {paymentType === 'CREDIT' && (
-          <label>{t('veh.financeProduct')}<input value={financeProduct} onChange={(e) => setFinanceProduct(e.target.value)} /></label>
+          <label>{t('veh.financeProduct')} <span className="opt">{t('common.optional')}</span><input value={financeProduct} onChange={(e) => setFinanceProduct(e.target.value)} /></label>
         )}
         <label>{t('veh.manualMargin')} <span className="req">*</span>
           <input type="number" value={margin} onChange={(e) => setMargin(e.target.value)} placeholder="15000000" />
@@ -87,8 +88,8 @@ export function SellModal({ vehicle, onClose, onSaved }: { vehicle: Vehicle; onC
         </label>
         {discounted && (
           <>
-            <label>{t('veh.discountAmount')}<input type="number" value={discountAmount} onChange={(e) => setDiscountAmount(e.target.value)} /></label>
-            <label>{t('veh.discountComment')}<input value={discountComment} onChange={(e) => setDiscountComment(e.target.value)} /></label>
+            <label>{t('veh.discountAmount')} <span className="opt">{t('common.optional')}</span><input type="number" value={discountAmount} onChange={(e) => setDiscountAmount(e.target.value)} /></label>
+            <label>{t('veh.discountComment')} <span className="opt">{t('common.optional')}</span><input value={discountComment} onChange={(e) => setDiscountComment(e.target.value)} /></label>
           </>
         )}
         {error && <div className="error">{error}</div>}

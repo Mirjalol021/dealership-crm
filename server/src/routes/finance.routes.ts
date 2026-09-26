@@ -350,7 +350,12 @@ export async function financeRoutes(app: FastifyInstance): Promise<void> {
       ? { serviceDate: { gte, lt } }
       : { paymentDate: { gte, lt } };
     const serviceVisits = await prisma.serviceVisit.findMany({
-      where: { ...svcDateFilter, ...brandFilter, ...dealershipFilter, ...scopeWhere(req.user!) },
+      // ServiceVisit has no brandId column — the brand lives on the related soldCar.
+      where: {
+        ...svcDateFilter,
+        ...dealershipFilter,
+        ...scopeWhere(req.user!, { nestedBrand: 'soldCar' }),
+      },
       include: { inventoryUsage: true },
     });
     const serviceRevenue = serviceVisits.reduce((s, v) => s + Number(v.serviceRevenue), 0);

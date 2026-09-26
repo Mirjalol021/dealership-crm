@@ -97,7 +97,12 @@
     "close": "Yopish",
     "cancel": "Bekor qilish",
     "save": "Saqlash",
-    "edit": "Tahrirlash"
+    "edit": "Tahrirlash",
+    "corporate": "Korporativ",
+    "exportCsv": "CSV",
+    "exportXlsx": "Excel",
+    "optional": "ixtiyoriy",
+    "required": "majburiy"
   },
   "lead": {
     "takeLead": "Lidni olish",
@@ -160,7 +165,8 @@
     "campaign": "Kampaniya",
     "followUpRequired": "Qayta aloqa sanasini belgilang",
     "formAnswers": "Forma javoblari",
-    "open": "Ochish"
+    "open": "Ochish",
+    "modelPlaceholder": "EX5…"
   },
   "pipelineStatus": {
     "NEW": "Yangi",
@@ -247,7 +253,9 @@
     "llc": "MChJ hisobi",
     "card": "Karta",
     "confirm": "Tasdiqlash",
-    "markPaid": "To'langan deb belgilash"
+    "markPaid": "To'langan deb belgilash",
+    "purchaseDate": "Xarid",
+    "vinHint": "Kamida 5 belgi"
   },
   "fin": {
     "dashboard": "Moliya paneli",
@@ -350,7 +358,8 @@
     "piece": "Dona",
     "liter": "Litr",
     "set": "To'plam",
-    "mileageDue": "Yurish bo'yicha"
+    "mileageDue": "Yurish bo'yicha",
+    "lastService": "Oxirgi xizmat"
   },
   "rep": {
     "salesReport": "Sotuv hisoboti",
@@ -409,7 +418,14 @@
     "leadsLabel": "Lidlar",
     "visitsLabel": "Tashriflar",
     "soldLabel": "Sotildi",
-    "exportProblems": "Xatolarni yuklab olish (CSV)"
+    "exportProblems": "Xatolarni yuklab olish (CSV)",
+    "from": "Dan",
+    "to": "Gacha",
+    "thisWeek": "Bu hafta",
+    "pipelineByManager": "Menejer bo'yicha pipeline holati",
+    "resultByManager": "Menejer bo'yicha lid natijasi",
+    "customersDue": "Muddati kelgan mijozlar",
+    "customersOverdue": "Muddati o'tgan mijozlar"
   },
   "dash": {
     "newToday": "Bugun yangi lidlar",
@@ -472,7 +488,12 @@
     "vinTaken": "VIN allaqachon mavjud",
     "alreadyTaken": "Boshqa xodim bu lidni oldi",
     "generic": "Xatolik yuz berdi",
-    "emailTaken": "Email allaqachon ro'yxatdan o'tgan"
+    "emailTaken": "Email allaqachon ro'yxatdan o'tgan",
+    "invalidInput": "Noto'g'ri ma'lumot",
+    "requiredFields": "Iltimos, majburiy maydonlarni tekshiring",
+    "forbidden": "Bu amal uchun ruxsatingiz yo'q",
+    "notFound": "Yozuv topilmadi",
+    "conflict": "Bunday yozuv allaqachon mavjud"
   },
   "appt": {
     "date": "Sana",
@@ -480,5 +501,10 @@
     "PLANNED": "Rejalashtirilgan",
     "ARRIVED": "Keldi",
     "NO_SHOW": "Kelmadi"
+  },
+  "lang": {
+    "uz": "O'zbek",
+    "ru": "Русский",
+    "en": "English"
   }
 }

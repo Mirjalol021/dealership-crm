@@ -5,7 +5,7 @@ import type { PoolLead } from '../lib/leadTypes';
 import { AssignModal } from '../components/AssignModal';
 import { useAuth } from '../lib/auth';
 
-export function LeadPoolPage() {
+export function LeadPoolPage({ titleKey = 'lead.pool' }: { titleKey?: string } = {}) {
   const { t } = useTranslation();
   const { can } = useAuth();
   const [leads, setLeads] = useState<PoolLead[]>([]);
@@ -39,7 +39,7 @@ export function LeadPoolPage() {
 
   return (
     <div>
-      <h1 className="page-title">{t('lead.pool')}</h1>
+      <h1 className="page-title">{t(titleKey)}</h1>
       {msg && <div className="error">{msg}</div>}
       {loading ? (
         <div className="loading">{t('common.loading')}</div>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
+import { formErrorText } from '../lib/formError';
 
 // Reserve a vehicle / create Zalog (§28).
 export function ReserveModal({ vehicleId, onClose, onSaved }: { vehicleId: string; onClose: () => void; onSaved: () => void }) {
@@ -11,9 +12,11 @@ export function ReserveModal({ vehicleId, onClose, onSaved }: { vehicleId: strin
   const [method, setMethod] = useState('CASH');
   const [comment, setComment] = useState('');
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
 
   async function save() {
     setBusy(true);
+    setError('');
     try {
       await api.post('/api/reservations', {
         vehicleId,
@@ -24,6 +27,8 @@ export function ReserveModal({ vehicleId, onClose, onSaved }: { vehicleId: strin
         comment: comment || null,
       });
       onSaved();
+    } catch (err) {
+      setError(formErrorText(err));
     } finally {
       setBusy(false);
     }
@@ -33,7 +38,7 @@ export function ReserveModal({ vehicleId, onClose, onSaved }: { vehicleId: strin
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <h2>{t('veh.newReservation')}</h2>
-        <label>{t('lead.name')}<input value={name} onChange={(e) => setName(e.target.value)} /></label>
+        <label>{t('lead.name')} <span className="opt">{t('common.optional')}</span><input value={name} onChange={(e) => setName(e.target.value)} /></label>
         <label>{t('lead.phone')} <span className="req">*</span>
           <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+998 90 123 45 67" required />
         </label>
@@ -47,7 +52,8 @@ export function ReserveModal({ vehicleId, onClose, onSaved }: { vehicleId: strin
             <option value="LLC_ACCOUNT">{t('veh.llc')}</option>
           </select>
         </label>
-        <label>{t('lead.comment')}<input value={comment} onChange={(e) => setComment(e.target.value)} /></label>
+        <label>{t('lead.comment')} <span className="opt">{t('common.optional')}</span><input value={comment} onChange={(e) => setComment(e.target.value)} /></label>
+        {error && <div className="error">{error}</div>}
         <div className="modal-actions">
           <button className="btn-ghost" onClick={onClose}>{t('lead.cancel')}</button>
           <button className="btn-primary" disabled={busy || !phone || !deposit} onClick={save}>{t('lead.save')}</button>

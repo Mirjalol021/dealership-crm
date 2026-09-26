@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
 import type { KpiBonus } from '../lib/financeTypes';
 import type { Brand } from '../lib/types';
+import { formErrorText } from '../lib/formError';
 
 export function KpiBonusesPage() {
   const { t } = useTranslation();
@@ -84,12 +85,16 @@ function AddKpiModal({ brands, onClose, onSaved }: { brands: Brand[]; onClose: (
   const [brandId, setBrandId] = useState(brands[0]?.id ?? '');
   const [amount, setAmount] = useState('');
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
 
   async function save() {
     setBusy(true);
+    setError('');
     try {
       await api.post('/api/kpi-bonuses', { month, brandId, amount: Number(amount || 0), status: 'EXPECTED' });
       onSaved();
+    } catch (err) {
+      setError(formErrorText(err));
     } finally {
       setBusy(false);
     }
@@ -106,6 +111,7 @@ function AddKpiModal({ brands, onClose, onSaved }: { brands: Brand[]; onClose: (
           </select>
         </label>
         <label>{t('veh.amount')}<input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} /></label>
+        {error && <div className="error">{error}</div>}
         <div className="modal-actions">
           <button className="btn-ghost" onClick={onClose}>{t('lead.cancel')}</button>
           <button className="btn-primary" disabled={busy || !amount} onClick={save}>{t('lead.save')}</button>

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
 import type { ServiceVisit, AsSoldCar, AsItem } from '../lib/aftersalesTypes';
 import { useAuth } from '../lib/auth';
+import { formErrorText } from '../lib/formError';
 
 export function ServiceVisitsPage() {
   const { t } = useTranslation();
@@ -79,6 +80,7 @@ export function NewVisitModal({ onClose, onSaved, initialCarId }: { onClose: () 
   const [nextDate, setNextDate] = useState('');
   const [lines, setLines] = useState<{ itemId: string; quantity: number }[]>([]);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     Promise.all([
@@ -104,6 +106,7 @@ export function NewVisitModal({ onClose, onSaved, initialCarId }: { onClose: () 
 
   async function save() {
     setBusy(true);
+    setError('');
     try {
       await api.post('/api/service-visits', {
         soldCarId,
@@ -116,6 +119,8 @@ export function NewVisitModal({ onClose, onSaved, initialCarId }: { onClose: () 
         items: lines,
       });
       onSaved();
+    } catch (err) {
+      setError(formErrorText(err));
     } finally {
       setBusy(false);
     }
@@ -130,7 +135,7 @@ export function NewVisitModal({ onClose, onSaved, initialCarId }: { onClose: () 
             {cars.map((c) => <option key={c.id} value={c.id}>{c.customerName ?? c.phone} — {c.brand} {c.model} ({c.vin})</option>)}
           </select>
         </label>
-        <label>{t('as.mileage')}<input type="number" value={mileage} onChange={(e) => setMileage(e.target.value)} /></label>
+        <label>{t('as.mileage')} <span className="opt">{t('common.optional')}</span><input type="number" value={mileage} onChange={(e) => setMileage(e.target.value)} /></label>
         <label>{t('as.workPerformed')} <span className="req">*</span><input value={work} onChange={(e) => setWork(e.target.value)} /></label>
         <label>{t('as.serviceRevenue')} <span className="req">*</span><input type="number" value={revenue} onChange={(e) => setRevenue(e.target.value)} /></label>
         <label>{t('fin.paymentMethod')}
@@ -142,7 +147,7 @@ export function NewVisitModal({ onClose, onSaved, initialCarId }: { onClose: () 
         </label>
 
         <fieldset>
-          <legend>{t('as.itemsUsed')}</legend>
+          <legend>{t('as.itemsUsed')} <span className="opt">{t('common.optional')}</span></legend>
           <select onChange={(e) => { addLine(e.target.value); e.target.value = ''; }}>
             <option value="">+ {t('as.addItem')}</option>
             {items.map((i) => <option key={i.id} value={i.id}>{i.itemName} ({i.quantityOnHand} {i.unit})</option>)}
@@ -162,6 +167,7 @@ export function NewVisitModal({ onClose, onSaved, initialCarId }: { onClose: () 
         <label>{t('as.nextService')} — {t('as.mileage')}<input type="number" value={nextMileage} onChange={(e) => setNextMileage(e.target.value)} /></label>
         <label>{t('as.nextService')} — {t('appt.date')}<input type="date" value={nextDate} onChange={(e) => setNextDate(e.target.value)} /></label>
 
+        {error && <div className="error">{error}</div>}
         <div className="modal-actions">
           <button className="btn-ghost" onClick={onClose}>{t('lead.cancel')}</button>
           <button className="btn-primary" disabled={busy || !work || !revenue} onClick={save}>{t('lead.save')}</button>

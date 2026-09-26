@@ -59,9 +59,9 @@ export function App() {
         <Route path="/kanban" element={guarded('leads.view.own', <KanbanPage />)} />
         <Route path="/lead-pool" element={guarded('leads.take', <LeadPoolPage />)} />
         <Route path="/my-leads" element={guarded('leads.view.own', <MyLeadsPage />)} />
-        <Route path="/new-leads" element={guarded('leads.view.own', <MyLeadsPage />)} />
-        <Route path="/follow-ups" element={guarded('leads.view.own', <MyLeadsPage />)} />
-        <Route path="/qualified" element={guarded('leads.assign', <LeadPoolPage />)} />
+        <Route path="/new-leads" element={guarded('leads.view.own', <MyLeadsPage initialFilter="new" titleKey="nav.newLeads" />)} />
+        <Route path="/follow-ups" element={guarded('leads.view.own', <MyLeadsPage initialFilter="call_today" titleKey="nav.followUps" />)} />
+        <Route path="/qualified" element={guarded('leads.assign', <LeadPoolPage titleKey="nav.qualified" />)} />
         <Route path="/appointments" element={<AppointmentsPage />} />
         <Route path="/management" element={guarded('leads.view.all', <ManagementPage />)} />
         <Route path="/inventory" element={guarded('inventory.view', <InventoryPage />)} />

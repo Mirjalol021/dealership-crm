@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
+import { formErrorText } from '../lib/formError';
 import type { Brand, Dealership } from '../lib/types';
 import type { LeadSource } from '../lib/leadTypes';
 
@@ -47,8 +48,8 @@ export function LeadAddModal({ onClose, onCreated }: { onClose: () => void; onCr
       } else {
         onCreated();
       }
-    } catch {
-      setError(t('err.generic'));
+    } catch (err) {
+      setError(formErrorText(err));
     } finally {
       setBusy(false);
     }
@@ -61,7 +62,7 @@ export function LeadAddModal({ onClose, onCreated }: { onClose: () => void; onCr
         <label>{t('lead.phone')} <span className="req">*</span>
           <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+998 90 123 45 67" required />
         </label>
-        <label>{t('lead.name')}
+        <label>{t('lead.name')} <span className="opt">{t('common.optional')}</span>
           <input value={name} onChange={(e) => setName(e.target.value)} />
         </label>
         <label>{t('lead.brand')} <span className="req">*</span>
@@ -69,7 +70,7 @@ export function LeadAddModal({ onClose, onCreated }: { onClose: () => void; onCr
             {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
           </select>
         </label>
-        <label>{t('lead.model')}
+        <label>{t('lead.model')} <span className="opt">{t('common.optional')}</span>
           <input value={model} onChange={(e) => setModel(e.target.value)} />
         </label>
         <label>{t('lead.dealership')}
@@ -82,7 +83,7 @@ export function LeadAddModal({ onClose, onCreated }: { onClose: () => void; onCr
             {SOURCES.map((s) => <option key={s} value={s}>{t(`sourceLabel.${s}`)}</option>)}
           </select>
         </label>
-        <label>{t('lead.note')}
+        <label>{t('lead.note')} <span className="opt">{t('common.optional')}</span>
           <input value={note} onChange={(e) => setNote(e.target.value)} />
         </label>
         {notice && <div className="ok-msg">{notice}</div>}

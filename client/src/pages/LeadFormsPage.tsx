@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
+import { formErrorText } from '../lib/formError';
 import type { Brand, Dealership } from '../lib/types';
 
 interface LeadForm {
@@ -74,10 +75,12 @@ function AddForm({ brands, dealerships, onSaved }: { brands: Brand[]; dealership
     source: 'META', fullNameKey: 'full_name', phoneKey: 'phone_number', modelKey: 'which_model',
   });
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
   const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
 
   async function save() {
     setBusy(true);
+    setError('');
     try {
       await api.post('/api/lead-forms', {
         source: f.source,
@@ -92,6 +95,8 @@ function AddForm({ brands, dealerships, onSaved }: { brands: Brand[]; dealership
         },
       });
       onSaved();
+    } catch (err) {
+      setError(formErrorText(err));
     } finally {
       setBusy(false);
     }
@@ -100,6 +105,7 @@ function AddForm({ brands, dealerships, onSaved }: { brands: Brand[]; dealership
   return (
     <form className="card" onSubmit={(e) => { e.preventDefault(); save(); }}>
       <h2>{t('rep.addForm')}</h2>
+      {error && <div className="error">{error}</div>}
       <label>{t('lead.source')}
         <select value={f.source} onChange={(e) => set('source', e.target.value)}>
           {SOURCES.map((s) => <option key={s} value={s}>{t(`sourceLabel.${s}`)}</option>)}
@@ -107,20 +113,20 @@ function AddForm({ brands, dealerships, onSaved }: { brands: Brand[]; dealership
       </label>
       <label>{t('rep.formId')} <span className="req">*</span><input value={f.formId ?? ''} onChange={(e) => set('formId', e.target.value)} /></label>
       <label>{t('rep.formName')} <span className="req">*</span><input value={f.formName ?? ''} onChange={(e) => set('formName', e.target.value)} /></label>
-      <label>{t('lead.brand')}
+      <label>{t('lead.brand')} <span className="opt">{t('common.optional')}</span>
         <select value={f.brandId ?? ''} onChange={(e) => set('brandId', e.target.value)}>
           <option value="">—</option>
           {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
         </select>
       </label>
-      <label>{t('lead.dealership')}
+      <label>{t('lead.dealership')} <span className="opt">{t('common.optional')}</span>
         <select value={f.dealershipId ?? ''} onChange={(e) => set('dealershipId', e.target.value)}>
           <option value="">—</option>
           {dealerships.map((d) => <option key={d.id} value={d.id}>{d.dealershipName}</option>)}
         </select>
       </label>
       <fieldset>
-        <legend>{t('rep.fieldMapping')}</legend>
+        <legend>{t('rep.fieldMapping')} <span className="opt">{t('common.optional')}</span></legend>
         <label>{t('lead.name')}<input value={f.fullNameKey ?? ''} onChange={(e) => set('fullNameKey', e.target.value)} /></label>
         <label>{t('lead.phone')}<input value={f.phoneKey ?? ''} onChange={(e) => set('phoneKey', e.target.value)} /></label>
         <label>{t('lead.model')}<input value={f.modelKey ?? ''} onChange={(e) => set('modelKey', e.target.value)} /></label>

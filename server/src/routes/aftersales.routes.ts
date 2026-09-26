@@ -36,7 +36,8 @@ export async function afterSalesRoutes(app: FastifyInstance): Promise<void> {
     const user = req.user!;
     const showCosts = can(user.role, 'costs.view');
     const q = req.query as Record<string, string | undefined>;
-    const where: Record<string, unknown> = { ...scopeWhere(user) };
+    // AfterSalesInventoryItem has no brandId column — scope by dealership only.
+    const where: Record<string, unknown> = { ...scopeWhere(user, { brandField: null }) };
     if (q.category) where.category = q.category;
     if (q.dealershipId) where.dealershipId = q.dealershipId;
     if (q.active === 'true') where.active = true;
@@ -198,7 +199,8 @@ export async function afterSalesRoutes(app: FastifyInstance): Promise<void> {
     const user = req.user!;
     const showCosts = can(user.role, 'costs.view');
     const q = req.query as Record<string, string | undefined>;
-    const where: Record<string, unknown> = { ...scopeWhere(user) };
+    // AfterSalesInventoryItem has no brandId column — scope by dealership only.
+    const where: Record<string, unknown> = { ...scopeWhere(user, { brandField: null }) };
     if (q.dealershipId) where.dealershipId = q.dealershipId;
 
     const items = await prisma.afterSalesInventoryItem.findMany({
@@ -238,7 +240,8 @@ export async function afterSalesRoutes(app: FastifyInstance): Promise<void> {
     const user = req.user!;
     const showCosts = can(user.role, 'costs.view');
     const q = req.query as Record<string, string | undefined>;
-    const where: Record<string, unknown> = { ...scopeWhere(user) };
+    // ServiceVisit has no brandId column — scope by dealership only.
+    const where: Record<string, unknown> = { ...scopeWhere(user, { brandField: null }) };
     if (q.soldCarId) where.soldCarId = q.soldCarId;
     if (user.role === 'SERVICE_STAFF') where.serviceStaffId = user.id;
 

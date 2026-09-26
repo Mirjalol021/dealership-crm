@@ -46,6 +46,16 @@ Or start both together from the repo root:
 ./start.sh
 ```
 
+## Tests
+
+Unit tests cover the pure calculation logic (finance engine) and the shared
+date-range helper used by reports, analytics and exports.
+
+```bash
+cd server
+npm test                  # tsx --test tests/*.test.ts
+```
+
 ## Default dev credentials
 
 - Super Admin: `admin@crm.local` / `admin12345`
@@ -71,6 +81,16 @@ Or start both together from the repo root:
   default or shorter than 32 chars while `NODE_ENV=production`.
 - Configure `CORS_ORIGINS` (comma-separated) for production; dev allows any origin.
 
+## Exports & filters
+
+- Every list/report exports the **current filtered result** as CSV or XLSX (§65).
+  Export buttons live on Reports, Inventory, Sales, My Leads, AfterSales Inventory and
+  Expenses. The export endpoint accepts the same shared filter bar params (§68):
+  `range` (`today` | `week` | `7d` | `month` | `lastMonth` | `custom`), `from`, `to`,
+  `brandId`, `dealershipId` (and `status` / `source` / `month` where relevant).
+- The date-range presets ("This Week", "Custom Range") are consistent everywhere via
+  the shared `server/src/lib/dateRange.ts` helper.
+
 ## Build status
 
 - [x] **Phase 1 — Foundation**: scaffold, PostgreSQL, Prisma, auth (session), users + roles,
@@ -87,3 +107,9 @@ Or start both together from the repo root:
       field mapping, phone/external dedup, bulk import, CSV/XLSX export, report families.
 - [x] **Hardening pass**: backend data scoping, Meta HMAC verification, login throttling,
       centralized error handling, atomic reservation/sale, service contribution in finance.
+- [x] **Spec-gap pass**: exports now honour the active filters + date range (§32/§65/§68);
+      export buttons on all list pages (§65); "This Week" + "Custom Range" presets (§68);
+      Sales report gains Pipeline/Result-by-Manager tables + service contribution (§67);
+      date-range logic centralised (`dateRange.ts`); i18n coverage completed (no hardcoded
+      strings, 452 keys × 3 languages); Call Center routes open in-context (§77);
+      finance + date-range unit tests (`npm test`).

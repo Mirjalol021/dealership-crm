@@ -30,7 +30,7 @@ export function LeadDetailPanel({ leadId }: { leadId: string }) {
     <div className="detail-panel">
       {detail.formAnswers.length > 0 && (
         <section>
-          <h3>Form answers</h3>
+          <h3>{t('lead.formAnswers')}</h3>
           <ul className="kv">
             {detail.formAnswers.map((a) => (
               <li key={a.id}><span className="muted">{a.questionLabelSnapshot}:</span> {a.answer}</li>

@@ -7,3 +7,6 @@ coverage/
 /.idea/
 /.vscode/
 client/tsconfig.tsbuildinfo
+
+# Env backups (may contain secrets)
+.env.backup.*

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
+import { formErrorText } from '../lib/formError';
 
 interface PreviewRow {
   row: number;
@@ -39,6 +40,7 @@ export function ImportPage() {
   const [preview, setPreview] = useState<PreviewRow[]>([]);
   const [counts, setCounts] = useState<{ total: number; valid: number; invalid: number; duplicate: number } | null>(null);
   const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -70,11 +72,14 @@ export function ImportPage() {
   async function send(confirm: boolean) {
     setBusy(true);
     setMessage('');
+    setError('');
     try {
       const r = await api.post<{ preview: PreviewRow[]; counts: typeof counts }>(`/api/import/${type}`, { rows, confirm });
       setPreview(r.preview);
       setCounts(r.counts);
       if (confirm) setMessage(`✓ ${t('rep.confirmImport')}: ${r.counts?.valid}`);
+    } catch (err) {
+      setError(formErrorText(err));
     } finally {
       setBusy(false);
     }
@@ -139,6 +144,7 @@ export function ImportPage() {
           </div>
         </div>
       )}
+      {error && <div className="error" style={{ marginTop: 12 }}>{error}</div>}
       {message && <div className="ok-msg" style={{ marginTop: 12 }}>{message}</div>}
     </div>
   );

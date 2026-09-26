@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
+import { formErrorText } from '../lib/formError';
 
 interface Assignable {
   id: string;
@@ -41,8 +42,8 @@ export function AssignModal({
     try {
       await api.post(`/api/leads/${leadId}/assign`, { toUserId, priority });
       onDone();
-    } catch {
-      setError(t('err.generic'));
+    } catch (err) {
+      setError(formErrorText(err));
     } finally {
       setBusy(false);
     }

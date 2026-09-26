@@ -13,19 +13,40 @@ export function isUnrestricted(user: AuthUser): boolean {
 }
 
 // Builds a Prisma `where` fragment that restricts rows to the user's scope.
+//
 // `dealershipField` / `brandField` are the column names on the model being queried.
+//
+// Some models do NOT carry a `brandId` column at all (e.g. ServiceVisit,
+// AfterSalesInventoryItem). For those, pass `brandField: null` to skip brand
+// scoping entirely — the record is then bounded by dealership only. This avoids
+// Prisma "Unknown argument brandId" errors.
+//
+// For models where the brand lives on a related record, pass `nestedBrand`
+// (the relation name) so the restriction is applied through the relation:
+//   scopeWhere(user, { nestedBrand: 'soldCar' })
+//   -> { dealershipId: {...}, soldCar: { brandId: { in: [...] } } }
 export function scopeWhere(
   user: AuthUser,
-  opts: { dealershipField?: string; brandField?: string } = {},
+  opts: { dealershipField?: string | null; brandField?: string | null; nestedBrand?: string } = {},
 ): Record<string, unknown> {
   if (isUnrestricted(user)) return {};
   const where: Record<string, unknown> = {};
 
-  const dealershipField = opts.dealershipField ?? 'dealershipId';
-  const brandField = opts.brandField ?? 'brandId';
+  // dealershipField: default 'dealershipId'; null disables dealership scoping.
+  if (opts.dealershipField !== null && user.dealershipIds.length > 0) {
+    where[opts.dealershipField ?? 'dealershipId'] = { in: user.dealershipIds };
+  }
 
-  if (user.dealershipIds.length > 0) where[dealershipField] = { in: user.dealershipIds };
-  if (user.brandIds.length > 0) where[brandField] = { in: user.brandIds };
+  // brandField: default 'brandId'; null disables brand scoping.
+  if (opts.brandField !== null && user.brandIds.length > 0) {
+    const brandField = opts.brandField ?? 'brandId';
+    if (opts.nestedBrand) {
+      // Restrict by the related record's brand (relation filter).
+      where[opts.nestedBrand] = { [brandField]: { in: user.brandIds } };
+    } else {
+      where[brandField] = { in: user.brandIds };
+    }
+  }
   return where;
 }
 

@@ -3,10 +3,32 @@
 export class ApiError extends Error {
   status: number;
   code: string;
-  constructor(status: number, code: string) {
+  /** Field-level validation details, when the server returns them (zod flatten()). */
+  details?: { formErrors?: string[]; fieldErrors?: Record<string, string[]> };
+  /** Optional human-readable message from the server. */
+  serverMessage?: string;
+
+  constructor(
+    status: number,
+    code: string,
+    details?: ApiError['details'],
+    serverMessage?: string,
+  ) {
     super(code);
     this.status = status;
     this.code = code;
+    this.details = details;
+    this.serverMessage = serverMessage;
+  }
+
+  /** A short, user-facing summary naming the offending fields (if any). */
+  friendly(): string {
+    if (this.details?.fieldErrors) {
+      const fields = Object.keys(this.details.fieldErrors);
+      if (fields.length) return `${this.code}: ${fields.join(', ')}`;
+    }
+    if (this.serverMessage) return this.serverMessage;
+    return this.code;
   }
 }
 
@@ -27,7 +49,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   if (res.status === 204) return undefined as T;
 
   const text = await res.text();
-  let data: { error?: string } = {};
+  let data: { error?: string; details?: ApiError['details']; message?: string } = {};
   try {
     data = text ? JSON.parse(text) : {};
   } catch {
@@ -39,7 +61,12 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
     if (res.status === 401 && !path.startsWith('/api/auth/')) {
       onUnauthorized?.();
     }
-    throw new ApiError(res.status, data?.error ?? 'REQUEST_FAILED');
+    throw new ApiError(
+      res.status,
+      data?.error ?? 'REQUEST_FAILED',
+      data?.details,
+      data?.message,
+    );
   }
   return data as T;
 }

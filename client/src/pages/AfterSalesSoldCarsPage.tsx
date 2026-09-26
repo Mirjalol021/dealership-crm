@@ -22,9 +22,9 @@ export function AfterSalesSoldCarsPage() {
               <th>{t('lead.phone')}</th>
               <th>{t('lead.brand')}</th>
               <th className="mono">{t('veh.vin')}</th>
-              <th>Purchase</th>
+              <th>{t('veh.purchaseDate')}</th>
               <th>{t('as.mileage')}</th>
-              <th>{t('as.lastService') ?? 'Last Service'}</th>
+              <th>{t('as.lastService')}</th>
               <th>{t('as.nextService')}</th>
             </tr>
           </thead>

@@ -97,7 +97,12 @@
     "close": "Закрыть",
     "cancel": "Отмена",
     "save": "Сохранить",
-    "edit": "Изменить"
+    "edit": "Изменить",
+    "corporate": "Корпоративный",
+    "exportCsv": "CSV",
+    "exportXlsx": "Excel",
+    "optional": "необязательно",
+    "required": "обязательно"
   },
   "lead": {
     "takeLead": "Взять лид",
@@ -160,7 +165,8 @@
     "campaign": "Кампания",
     "followUpRequired": "Укажите дату повторного звонка",
     "formAnswers": "Ответы формы",
-    "open": "Открыть"
+    "open": "Открыть",
+    "modelPlaceholder": "EX5…"
   },
   "pipelineStatus": {
     "NEW": "Новый",
@@ -247,7 +253,9 @@
     "llc": "Счёт ООО",
     "card": "Карта",
     "confirm": "Подтвердить",
-    "markPaid": "Отметить оплаченным"
+    "markPaid": "Отметить оплаченным",
+    "purchaseDate": "Покупка",
+    "vinHint": "Минимум 5 символов"
   },
   "fin": {
     "dashboard": "Финансовая панель",
@@ -350,7 +358,8 @@
     "piece": "Штука",
     "liter": "Литр",
     "set": "Комплект",
-    "mileageDue": "По пробегу"
+    "mileageDue": "По пробегу",
+    "lastService": "Последнее обслуживание"
   },
   "rep": {
     "salesReport": "Отчёт продаж",
@@ -409,7 +418,14 @@
     "leadsLabel": "Лиды",
     "visitsLabel": "Визиты",
     "soldLabel": "Продано",
-    "exportProblems": "Экспорт ошибок (CSV)"
+    "exportProblems": "Экспорт ошибок (CSV)",
+    "from": "С",
+    "to": "По",
+    "thisWeek": "Эта неделя",
+    "pipelineByManager": "Статус пайплайна по менеджерам",
+    "resultByManager": "Результат лида по менеджерам",
+    "customersDue": "Клиенты к визиту",
+    "customersOverdue": "Просроченные клиенты"
   },
   "dash": {
     "newToday": "Новые лиды сегодня",
@@ -472,7 +488,12 @@
     "vinTaken": "VIN уже существует",
     "alreadyTaken": "Кто-то уже взял этот лид",
     "generic": "Что-то пошло не так",
-    "emailTaken": "Email уже зарегистрирован"
+    "emailTaken": "Email уже зарегистрирован",
+    "invalidInput": "Неверные данные",
+    "requiredFields": "Проверьте обязательные поля",
+    "forbidden": "У вас нет прав на это действие",
+    "notFound": "Запись не найдена",
+    "conflict": "Такая запись уже существует"
   },
   "appt": {
     "date": "Дата",
@@ -480,5 +501,10 @@
     "PLANNED": "Запланирован",
     "ARRIVED": "Пришёл",
     "NO_SHOW": "Не пришёл"
+  },
+  "lang": {
+    "uz": "O'zbek",
+    "ru": "Русский",
+    "en": "English"
   }
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
+import { formErrorText } from '../lib/formError';
 import type { Brand, Dealership } from '../lib/types';
 import { AuditLogPage } from './AuditLogPage';
 
@@ -103,6 +104,7 @@ function BrandsTab({ brands, onChanged }: { brands: Brand[]; onChanged: () => vo
   const [newName, setNewName] = useState('');
   const [newCode, setNewCode] = useState('');
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
 
   function startEdit(b: Brand) {
     setEditId(b.id);
@@ -111,11 +113,13 @@ function BrandsTab({ brands, onChanged }: { brands: Brand[]; onChanged: () => vo
 
   async function saveEdit() {
     if (!editId) return;
-    setBusy(true);
+    setBusy(true); setError('');
     try {
       await api.patch(`/api/brands/${editId}`, draft);
       setEditId(null);
       onChanged();
+    } catch (err) {
+      setError(formErrorText(err));
     } finally {
       setBusy(false);
     }
@@ -123,12 +127,14 @@ function BrandsTab({ brands, onChanged }: { brands: Brand[]; onChanged: () => vo
 
   async function add(e: FormEvent) {
     e.preventDefault();
-    setBusy(true);
+    setBusy(true); setError('');
     try {
       await api.post('/api/brands', { name: newName, code: newCode });
       setNewName('');
       setNewCode('');
       onChanged();
+    } catch (err) {
+      setError(formErrorText(err));
     } finally {
       setBusy(false);
     }
@@ -175,6 +181,7 @@ function BrandsTab({ brands, onChanged }: { brands: Brand[]; onChanged: () => vo
       </div>
       <form className="card" onSubmit={add}>
         <h2>{t('settings.addBrand')}</h2>
+        {error && <div className="error">{error}</div>}
         <label>{t('settings.name')}<input value={newName} onChange={(e) => setNewName(e.target.value)} required /></label>
         <label>{t('settings.code')}<input value={newCode} onChange={(e) => setNewCode(e.target.value)} required /></label>
         <button className="btn-primary" disabled={busy}>{t('settings.save')}</button>
@@ -202,6 +209,7 @@ function DealershipsTab({
   const [address, setAddress] = useState('');
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
 
   function startEdit(d: Dealership) {
     setEditId(d.id);
@@ -213,7 +221,7 @@ function DealershipsTab({
 
   async function saveEdit() {
     if (!editId) return;
-    setBusy(true);
+    setBusy(true); setError('');
     try {
       await api.patch(`/api/dealerships/${editId}`, {
         dealershipName: draft.dealershipName, cityRegion: draft.cityRegion,
@@ -221,6 +229,8 @@ function DealershipsTab({
       });
       setEditId(null);
       onChanged();
+    } catch (err) {
+      setError(formErrorText(err));
     } finally {
       setBusy(false);
     }
@@ -235,11 +245,13 @@ function DealershipsTab({
 
   async function add(e: FormEvent) {
     e.preventDefault();
-    setBusy(true);
+    setBusy(true); setError('');
     try {
       await api.post('/api/dealerships', { dealershipName: name, cityRegion: city, address: address || null, brandIds: selectedBrands });
       setName(''); setCity(''); setAddress(''); setSelectedBrands([]);
       onChanged();
+    } catch (err) {
+      setError(formErrorText(err));
     } finally {
       setBusy(false);
     }
@@ -298,9 +310,10 @@ function DealershipsTab({
       </div>
       <form className="card" onSubmit={add}>
         <h2>{t('settings.addDealership')}</h2>
+        {error && <div className="error">{error}</div>}
         <label>{t('settings.name')}<input value={name} onChange={(e) => setName(e.target.value)} required /></label>
         <label>{t('settings.cityRegion')}<input value={city} onChange={(e) => setCity(e.target.value)} required /></label>
-        <label>{t('settings.address')}<input value={address} onChange={(e) => setAddress(e.target.value)} /></label>
+        <label>{t('settings.address')} <span className="opt">{t('common.optional')}</span><input value={address} onChange={(e) => setAddress(e.target.value)} /></label>
         <fieldset>
           <legend>{t('settings.brandsAvailable')}</legend>
           {brands.map((b) => (

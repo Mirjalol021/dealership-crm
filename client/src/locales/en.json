@@ -97,7 +97,12 @@
     "close": "Close",
     "cancel": "Cancel",
     "save": "Save",
-    "edit": "Edit"
+    "edit": "Edit",
+    "corporate": "Corporate",
+    "exportCsv": "CSV",
+    "exportXlsx": "Excel",
+    "optional": "optional",
+    "required": "required"
   },
   "lead": {
     "takeLead": "Take Lead",
@@ -160,7 +165,8 @@
     "campaign": "Campaign",
     "followUpRequired": "Please set a follow-up date",
     "formAnswers": "Form answers",
-    "open": "Open"
+    "open": "Open",
+    "modelPlaceholder": "EX5…"
   },
   "pipelineStatus": {
     "NEW": "New",
@@ -247,7 +253,9 @@
     "llc": "LLC Account",
     "card": "Card",
     "confirm": "Confirm",
-    "markPaid": "Mark Paid"
+    "markPaid": "Mark Paid",
+    "purchaseDate": "Purchase",
+    "vinHint": "Min. 5 characters"
   },
   "fin": {
     "dashboard": "Finance Dashboard",
@@ -350,7 +358,8 @@
     "piece": "Piece",
     "liter": "Liter",
     "set": "Set",
-    "mileageDue": "Mileage Due"
+    "mileageDue": "Mileage Due",
+    "lastService": "Last Service"
   },
   "rep": {
     "salesReport": "Sales Report",
@@ -409,7 +418,14 @@
     "leadsLabel": "Leads",
     "visitsLabel": "Visits",
     "soldLabel": "Sold",
-    "exportProblems": "Export problems (CSV)"
+    "exportProblems": "Export problems (CSV)",
+    "from": "From",
+    "to": "To",
+    "thisWeek": "This Week",
+    "pipelineByManager": "Pipeline Status by Manager",
+    "resultByManager": "Lead Result by Manager",
+    "customersDue": "Customers Due",
+    "customersOverdue": "Customers Overdue"
   },
   "dash": {
     "newToday": "New Leads Today",
@@ -472,7 +488,12 @@
     "vinTaken": "VIN already exists",
     "alreadyTaken": "Someone else already took this lead",
     "generic": "Something went wrong",
-    "emailTaken": "Email already registered"
+    "emailTaken": "Email already registered",
+    "invalidInput": "Invalid input",
+    "requiredFields": "Please check the required fields",
+    "forbidden": "You do not have permission for this action",
+    "notFound": "Record not found",
+    "conflict": "This record already exists"
   },
   "appt": {
     "date": "Date",
@@ -480,5 +501,10 @@
     "PLANNED": "Planned",
     "ARRIVED": "Arrived",
     "NO_SHOW": "No Show"
+  },
+  "lang": {
+    "uz": "O'zbek",
+    "ru": "Русский",
+    "en": "English"
   }
 }
