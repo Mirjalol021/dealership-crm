@@ -52,6 +52,16 @@ export function SoldCarsPage() {
         </div>
       </div>
 
+      <div className="fin-grid" style={{ gridTemplateColumns: 'repeat(3,1fr)' }}>
+        <div className="fin-card neutral"><div className="fin-card-label">{t('rep.sold')}</div><div className="fin-card-value">{sales.length}</div></div>
+        <div className="fin-card warn"><div className="fin-card-label">{t('veh.discountedSale')}</div><div className="fin-card-value">{sales.filter((s) => s.discountedSale).length}</div></div>
+        {showCosts && (
+          <div className="fin-card good"><div className="fin-card-label">{t('fin.turnover')}</div>
+            <div className="fin-card-value">{sales.reduce((sum, x) => sum + (x.salePrice ?? 0), 0).toLocaleString()}</div>
+          </div>
+        )}
+      </div>
+
       <div className="table-scroll">
         <table className="table">
           <thead>

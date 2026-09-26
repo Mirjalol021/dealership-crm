@@ -26,7 +26,6 @@ import { CustomersToCallPage } from './pages/CustomersToCallPage';
 import { StockMovementsPage } from './pages/StockMovementsPage';
 import { AfterSalesSoldCarsPage } from './pages/AfterSalesSoldCarsPage';
 import { ReportsPage } from './pages/ReportsPage';
-import { SalesPage } from './pages/SalesPage';
 import { ImportPage } from './pages/ImportPage';
 import { LeadFormsPage } from './pages/LeadFormsPage';
 
@@ -71,7 +70,6 @@ export function App() {
         <Route path="/management" element={guarded('leads.view.all', <ManagementPage />)} />
         <Route path="/inventory" element={guarded('inventory.view', <InventoryPage />)} />
         <Route path="/reservations" element={guarded('sales.view', <ReservationsPage />)} />
-        <Route path="/sales" element={guarded('sales.view', <SalesPage />)} />
         <Route path="/sold-cars" element={guarded('sales.view', <SoldCarsPage />)} />
         <Route path="/aftersales" element={guarded('aftersales.view', <AfterSalesSoldCarsPage />)} />
         <Route path="/aftersales/inventory" element={guarded('aftersales.view', <AfterSalesInventoryPage />)} />
