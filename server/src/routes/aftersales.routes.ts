@@ -68,6 +68,11 @@ export async function afterSalesRoutes(app: FastifyInstance): Promise<void> {
     if (!parsed.success) return reply.code(400).send({ error: 'INVALID_INPUT', details: parsed.error.flatten() });
     const d = parsed.data;
 
+    // A scoped user may only create stock inside their dealership.
+    if (!canAccessScope(req.user!, { dealershipId: d.dealershipId, brandId: null })) {
+      return reply.code(403).send({ error: 'FORBIDDEN' });
+    }
+
     const item = await prisma.afterSalesInventoryItem.create({
       data: {
         dealershipId: d.dealershipId,
@@ -101,6 +106,12 @@ export async function afterSalesRoutes(app: FastifyInstance): Promise<void> {
     });
     const parsed = schema.safeParse(req.body);
     if (!parsed.success) return reply.code(400).send({ error: 'INVALID_INPUT' });
+    const before = await prisma.afterSalesInventoryItem.findUnique({ where: { id } });
+    if (!before) return reply.code(404).send({ error: 'NOT_FOUND' });
+    // Cannot edit stock outside the user's scope (§73).
+    if (!canAccessScope(req.user!, { dealershipId: before.dealershipId, brandId: null })) {
+      return reply.code(403).send({ error: 'FORBIDDEN' });
+    }
     const item = await prisma.afterSalesInventoryItem.update({ where: { id }, data: parsed.data });
     return reply.send({ item: itemCard(item, can(req.user!.role, 'costs.view')) });
   });
@@ -120,6 +131,12 @@ export async function afterSalesRoutes(app: FastifyInstance): Promise<void> {
     const parsed = schema.safeParse(req.body);
     if (!parsed.success) return reply.code(400).send({ error: 'INVALID_INPUT', details: parsed.error.flatten() });
     const d = parsed.data;
+
+    const existingItem = await prisma.afterSalesInventoryItem.findUnique({ where: { id } });
+    if (!existingItem) return reply.code(404).send({ error: 'NOT_FOUND' });
+    if (!canAccessScope(user, { dealershipId: existingItem.dealershipId, brandId: null })) {
+      return reply.code(403).send({ error: 'FORBIDDEN' });
+    }
 
     const result = await prisma.$transaction(async (tx) => {
       const item = await tx.afterSalesInventoryItem.findUnique({ where: { id } });
@@ -162,6 +179,12 @@ export async function afterSalesRoutes(app: FastifyInstance): Promise<void> {
     const parsed = schema.safeParse(req.body);
     if (!parsed.success) return reply.code(400).send({ error: 'INVALID_INPUT', details: parsed.error.flatten() });
     const d = parsed.data;
+
+    const existingItem = await prisma.afterSalesInventoryItem.findUnique({ where: { id } });
+    if (!existingItem) return reply.code(404).send({ error: 'NOT_FOUND' });
+    if (!canAccessScope(user, { dealershipId: existingItem.dealershipId, brandId: null })) {
+      return reply.code(403).send({ error: 'FORBIDDEN' });
+    }
 
     const result = await prisma.$transaction(async (tx) => {
       const item = await tx.afterSalesInventoryItem.findUnique({ where: { id } });
@@ -319,6 +342,8 @@ export async function afterSalesRoutes(app: FastifyInstance): Promise<void> {
 
     const soldCar = await prisma.soldCar.findUnique({ where: { id: d.soldCarId } });
     if (!soldCar) return reply.code(404).send({ error: 'SOLD_CAR_NOT_FOUND' });
+    // Must not service a car outside the user's scope.
+    if (!canAccessScope(user, soldCar)) return reply.code(403).send({ error: 'FORBIDDEN' });
 
     const visit = await prisma.$transaction(async (tx) => {
       const created = await tx.serviceVisit.create({

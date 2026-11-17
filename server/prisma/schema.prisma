@@ -340,12 +340,11 @@ model Customer {
 model LeadPhone {
   id        String   @id @default(cuid())
   customerId String
-  phone     String   // normalized
+  phone     String   @unique // normalized; one phone may map to only one customer
   createdAt DateTime @default(now())
 
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
-  @@index([phone])
   @@index([customerId])
 }
 

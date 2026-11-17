@@ -65,6 +65,25 @@ function saleCard(
   };
 }
 
+// Loads a sold car for a mutating endpoint and enforces the user's data scope.
+// Returns null when the record does not exist; callers send 404.
+async function loadSaleScoped(
+  id: string,
+  user: { role: string; dealershipIds: string[]; brandIds: string[] },
+): Promise<
+  | { ok: true; sale: { id: string; dealershipId: string; brandId: string; salesManagerId: string | null } }
+  | { ok: false; code: 404 | 403 }
+> {
+  const sale = await prisma.soldCar.findUnique({
+    where: { id },
+    select: { id: true, dealershipId: true, brandId: true, salesManagerId: true },
+  });
+  if (!sale) return { ok: false, code: 404 };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if (!canAccessScope(user as any, sale)) return { ok: false, code: 403 };
+  return { ok: true, sale };
+}
+
 export async function salesRoutes(app: FastifyInstance): Promise<void> {
   // List sold cars. Cost fields gated by role (§73).
   app.get('/api/sales', { preHandler: [requireAuth] }, async (req, reply) => {
@@ -111,6 +130,10 @@ export async function salesRoutes(app: FastifyInstance): Promise<void> {
     });
     if (!sale) return reply.code(404).send({ error: 'NOT_FOUND' });
     if (!canAccessScope(user, sale)) return reply.code(403).send({ error: 'FORBIDDEN' });
+    // A Sales Manager may only open sales they own.
+    if (user.role === 'SALES_MANAGER' && sale.salesManagerId !== user.id) {
+      return reply.code(403).send({ error: 'FORBIDDEN' });
+    }
     return reply.send({
       sale: {
         ...saleCard(sale, showCosts),
@@ -213,6 +236,9 @@ export async function salesRoutes(app: FastifyInstance): Promise<void> {
     const parsed = schema.safeParse(req.body);
     if (!parsed.success) return reply.code(400).send({ error: 'INVALID_INPUT' });
 
+    const scoped = await loadSaleScoped(id, req.user!);
+    if (!scoped.ok) return reply.code(scoped.code).send({ error: scoped.code === 404 ? 'NOT_FOUND' : 'FORBIDDEN' });
+
     const before = await prisma.soldCar.findUnique({ where: { id } });
     const sale = await prisma.soldCar.update({
       where: { id },
@@ -228,7 +254,11 @@ export async function salesRoutes(app: FastifyInstance): Promise<void> {
       entityId: id,
       action: 'UPDATE',
       summary: `Updated sale ${sale.vin}`,
-      oldValue: before ? { manualMargin: Number(before.manualMargin), discountedSale: before.discountedSale, discountAmount: before.discountAmount != null ? Number(before.discountAmount) : null, paymentType: before.paymentType } : null,
+      oldValue: before ? {
+        manualMargin: Number(before.manualMargin), discountedSale: before.discountedSale,
+        discountAmount: before.discountAmount != null ? Number(before.discountAmount) : null,
+        paymentType: before.paymentType,
+      } : null,
       newValue: parsed.data,
     });
     return reply.send({ sale: saleCard(sale, true) });
@@ -247,6 +277,9 @@ export async function salesRoutes(app: FastifyInstance): Promise<void> {
     const parsed = schema.safeParse(req.body);
     if (!parsed.success) return reply.code(400).send({ error: 'INVALID_INPUT', details: parsed.error.flatten() });
     const d = parsed.data;
+
+    const scoped = await loadSaleScoped(id, req.user!);
+    if (!scoped.ok) return reply.code(scoped.code).send({ error: scoped.code === 404 ? 'NOT_FOUND' : 'FORBIDDEN' });
 
     const bonus = await prisma.vehicleCustomerBonus.create({
       data: {
@@ -267,13 +300,20 @@ export async function salesRoutes(app: FastifyInstance): Promise<void> {
   });
 
   app.delete('/api/sales/:id/bonuses/:bonusId', { preHandler: [requirePermission('costs.view')] }, async (req, reply) => {
-    const { bonusId } = req.params as { id: string; bonusId: string };
+    const { id, bonusId } = req.params as { id: string; bonusId: string };
+    const scoped = await loadSaleScoped(id, req.user!);
+    if (!scoped.ok) return reply.code(scoped.code).send({ error: scoped.code === 404 ? 'NOT_FOUND' : 'FORBIDDEN' });
+
     const before = await prisma.vehicleCustomerBonus.findUnique({ where: { id: bonusId } });
+    if (!before) return reply.code(404).send({ error: 'NOT_FOUND' });
+    // A bonus must belong to the sale named in the path.
+    if (before.soldCarId !== id) return reply.code(403).send({ error: 'FORBIDDEN' });
+
     await prisma.vehicleCustomerBonus.delete({ where: { id: bonusId } });
     await logAuditSafe({
       actorId: req.user!.id, entity: 'VehicleCustomerBonus', entityId: bonusId, action: 'DELETE',
-      summary: before ? `Deleted customer bonus ${before.bonusType}` : 'Deleted customer bonus',
-      oldValue: before ? { bonusType: before.bonusType, amount: Number(before.amount), paidFrom: before.paidFrom } : null,
+      summary: `Deleted customer bonus ${before.bonusType}`,
+      oldValue: { bonusType: before.bonusType, amount: Number(before.amount), paidFrom: before.paidFrom },
     });
     return reply.send({ ok: true });
   });
@@ -292,6 +332,9 @@ export async function salesRoutes(app: FastifyInstance): Promise<void> {
     const parsed = schema.safeParse(req.body);
     if (!parsed.success) return reply.code(400).send({ error: 'INVALID_INPUT', details: parsed.error.flatten() });
     const d = parsed.data;
+
+    const scoped = await loadSaleScoped(id, req.user!);
+    if (!scoped.ok) return reply.code(scoped.code).send({ error: scoped.code === 404 ? 'NOT_FOUND' : 'FORBIDDEN' });
 
     const bonus = await prisma.vinDistributorBonus.create({
       data: {
@@ -313,7 +356,7 @@ export async function salesRoutes(app: FastifyInstance): Promise<void> {
   });
 
   app.patch('/api/sales/:id/vin-bonuses/:bonusId', { preHandler: [requirePermission('costs.view')] }, async (req, reply) => {
-    const { bonusId } = req.params as { id: string; bonusId: string };
+    const { id, bonusId } = req.params as { id: string; bonusId: string };
     const schema = z.object({
       amount: z.number().nonnegative().optional(),
       accountingMonth: z.string().optional(),
@@ -325,7 +368,14 @@ export async function salesRoutes(app: FastifyInstance): Promise<void> {
     const parsed = schema.safeParse(req.body);
     if (!parsed.success) return reply.code(400).send({ error: 'INVALID_INPUT' });
     const d = parsed.data;
+
+    const scoped = await loadSaleScoped(id, req.user!);
+    if (!scoped.ok) return reply.code(scoped.code).send({ error: scoped.code === 404 ? 'NOT_FOUND' : 'FORBIDDEN' });
+
     const before = await prisma.vinDistributorBonus.findUnique({ where: { id: bonusId } });
+    if (!before) return reply.code(404).send({ error: 'NOT_FOUND' });
+    if (before.soldCarId !== id) return reply.code(403).send({ error: 'FORBIDDEN' });
+
     const bonus = await prisma.vinDistributorBonus.update({
       where: { id: bonusId },
       data: {
@@ -335,9 +385,9 @@ export async function salesRoutes(app: FastifyInstance): Promise<void> {
     });
     await logAuditSafe({
       actorId: req.user!.id, entity: 'VinDistributorBonus', entityId: bonusId,
-      action: before && before.status !== bonus.status ? 'STATUS_CHANGE' : 'UPDATE',
-      summary: `VIN bonus ${before?.status ?? ''} -> ${bonus.status}`,
-      oldValue: before ? { amount: Number(before.amount), status: before.status } : null,
+      action: before.status !== bonus.status ? 'STATUS_CHANGE' : 'UPDATE',
+      summary: `VIN bonus ${before.status} -> ${bonus.status}`,
+      oldValue: { amount: Number(before.amount), status: before.status },
       newValue: { amount: Number(bonus.amount), status: bonus.status },
     });
     return reply.send({ bonus: { ...bonus, amount: Number(bonus.amount) } });

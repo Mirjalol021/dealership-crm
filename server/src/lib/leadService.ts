@@ -1,4 +1,5 @@
-import type { Prisma, PrismaClient } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import type { PrismaClient } from '@prisma/client';
 import type { ActivityEvent, AssignmentType } from '@prisma/client';
 
 type Tx = Prisma.TransactionClient | PrismaClient;
@@ -36,6 +37,11 @@ export async function logAssignment(
 }
 
 // Find an existing customer by any known phone, else create one (§63).
+//
+// `LeadPhone.phone` is UNIQUE, so two concurrent ingests for the same new phone
+// can both miss the initial `findFirst` and race to `create`. The loser gets a
+// P2002 unique violation — we catch it and re-read the row the winner created,
+// making the operation race-safe (was: whole transaction failed -> 500).
 export async function findOrCreateCustomer(
   tx: Tx,
   normalized: string,
@@ -44,14 +50,23 @@ export async function findOrCreateCustomer(
   const phoneHit = await tx.leadPhone.findFirst({ where: { phone: normalized } });
   if (phoneHit) return { customerId: phoneHit.customerId, existed: true };
 
-  const customer = await tx.customer.create({
-    data: {
-      name: name ?? null,
-      primaryPhone: normalized,
-      phones: { create: [{ phone: normalized }] },
-    },
-  });
-  return { customerId: customer.id, existed: false };
+  try {
+    const customer = await tx.customer.create({
+      data: {
+        name: name ?? null,
+        primaryPhone: normalized,
+        phones: { create: [{ phone: normalized }] },
+      },
+    });
+    return { customerId: customer.id, existed: false };
+  } catch (err) {
+    // Unique violation: another request created the same phone first. Re-read it.
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+      const winner = await tx.leadPhone.findFirst({ where: { phone: normalized } });
+      if (winner) return { customerId: winner.customerId, existed: true };
+    }
+    throw err;
+  }
 }
 
 // Next attempt number for a lead (auto-numbered, §20).

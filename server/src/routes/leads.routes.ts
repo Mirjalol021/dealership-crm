@@ -337,6 +337,13 @@ export async function leadRoutes(app: FastifyInstance): Promise<void> {
       }
     }
 
+    // §14 smart follow-up: a No Answer / Busy result MUST carry a follow-up date
+    // (the UI enforces this; the API must too, or the rule is bypassable).
+    const FOLLOW_UP_REQUIRED: readonly string[] = ['NO_ANSWER', 'CLIENT_BUSY'];
+    if (FOLLOW_UP_REQUIRED.includes(d.result) && !d.nextFollowUpAt) {
+      return reply.code(400).send({ error: 'FOLLOW_UP_REQUIRED', result: d.result });
+    }
+
     const lead = await prisma.lead.findUnique({ where: { id } });
     if (!lead) return reply.code(404).send({ error: 'NOT_FOUND' });
     if (!scopeToUser(lead, user)) return reply.code(403).send({ error: 'FORBIDDEN' });

@@ -58,7 +58,11 @@ async function main() {
   const adminPassword = 'admin12345';
   const admin = await prisma.user.upsert({
     where: { email: adminEmail },
-    update: {},
+    // Re-assert access so a mis-configured account self-heals on re-seed.
+    update: {
+      dealershipAccess: { deleteMany: {}, create: [{ dealershipId: dealership.id }] },
+      brandAccess: { deleteMany: {}, create: brands.map((b) => ({ brandId: b.id })) },
+    },
     create: {
       name: 'Super Admin',
       email: adminEmail,
@@ -77,7 +81,10 @@ async function main() {
   const mgrPassword = 'manager123';
   const manager = await prisma.user.upsert({
     where: { email: mgrEmail },
-    update: {},
+    update: {
+      dealershipAccess: { deleteMany: {}, create: [{ dealershipId: dealership.id }] },
+      brandAccess: { deleteMany: {}, create: brands.map((b) => ({ brandId: b.id })) },
+    },
     create: {
       name: 'Aziz Manager',
       email: mgrEmail,
@@ -203,7 +210,10 @@ async function main() {
   for (const u of extraUsers) {
     await prisma.user.upsert({
       where: { email: u.email },
-      update: {},
+      update: {
+        dealershipAccess: { deleteMany: {}, create: [{ dealershipId: dealership.id }] },
+        brandAccess: { deleteMany: {}, create: brands.map((b) => ({ brandId: b.id })) },
+      },
       create: {
         name: u.name, email: u.email, role: u.role, preferredLanguage: 'uz', active: true,
         passwordHash: await bcrypt.hash(u.password, 12),

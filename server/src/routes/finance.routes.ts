@@ -5,7 +5,7 @@ import { requirePermission } from '../auth/guard.js';
 import {
   vehicleContribution, netResult, monthKey, serviceContribution as computeServiceContribution, type TaxSettings,
 } from '../lib/finance.js';
-import { scopeWhere } from '../auth/scope.js';
+import { scopeWhere, canAccessScope } from '../auth/scope.js';
 import { logAuditSafe } from '../lib/audit.js';
 
 async function taxSettings(): Promise<TaxSettings> {
@@ -117,6 +117,11 @@ export async function financeRoutes(app: FastifyInstance): Promise<void> {
     if (!parsed.success) return reply.code(400).send({ error: 'INVALID_INPUT', details: parsed.error.flatten() });
     const d = parsed.data;
 
+    // A scoped finance user may only create expenses inside their dealership/brand.
+    if (!canAccessScope(req.user!, { dealershipId: d.dealershipId ?? null, brandId: d.brandId ?? null })) {
+      return reply.code(403).send({ error: 'FORBIDDEN' });
+    }
+
     const expense = await prisma.expense.create({
       data: {
         accountingMonth: d.accountingMonth,
@@ -158,6 +163,16 @@ export async function financeRoutes(app: FastifyInstance): Promise<void> {
     if (!parsed.success) return reply.code(400).send({ error: 'INVALID_INPUT' });
     const d = parsed.data;
     const before = await prisma.expense.findUnique({ where: { id } });
+    if (!before) return reply.code(404).send({ error: 'NOT_FOUND' });
+    // Cannot touch expenses outside the user's scope, nor move one out of scope.
+    if (!canAccessScope(req.user!, before)) return reply.code(403).send({ error: 'FORBIDDEN' });
+    if ((d.dealershipId !== undefined || d.brandId !== undefined) &&
+        !canAccessScope(req.user!, {
+          dealershipId: d.dealershipId !== undefined ? d.dealershipId : before.dealershipId,
+          brandId: d.brandId !== undefined ? d.brandId : before.brandId,
+        })) {
+      return reply.code(403).send({ error: 'FORBIDDEN' });
+    }
     const expense = await prisma.expense.update({
       where: { id },
       data: {
@@ -205,6 +220,9 @@ export async function financeRoutes(app: FastifyInstance): Promise<void> {
     const parsed = schema.safeParse(req.body);
     if (!parsed.success) return reply.code(400).send({ error: 'INVALID_INPUT', details: parsed.error.flatten() });
     const d = parsed.data;
+    if (!canAccessScope(req.user!, { dealershipId: d.dealershipId ?? null, brandId: d.brandId })) {
+      return reply.code(403).send({ error: 'FORBIDDEN' });
+    }
     const bonus = await prisma.kpiBonus.create({
       data: {
         month: d.month,
@@ -240,6 +258,8 @@ export async function financeRoutes(app: FastifyInstance): Promise<void> {
     if (!parsed.success) return reply.code(400).send({ error: 'INVALID_INPUT' });
     const d = parsed.data;
     const before = await prisma.kpiBonus.findUnique({ where: { id } });
+    if (!before) return reply.code(404).send({ error: 'NOT_FOUND' });
+    if (!canAccessScope(req.user!, before)) return reply.code(403).send({ error: 'FORBIDDEN' });
     const bonus = await prisma.kpiBonus.update({
       where: { id },
       data: {
@@ -315,6 +335,9 @@ export async function financeRoutes(app: FastifyInstance): Promise<void> {
           : { month: month ?? undefined }),
         ...brandFilter,
         ...(q.dealershipId ? { dealershipId: q.dealershipId } : {}),
+        // KPI bonuses MUST respect the user's data scope (was a leak: an
+        // unrestricted role's totals included other dealerships' bonuses).
+        ...scopeWhere(req.user!, { dealershipField: 'dealershipId', brandField: 'brandId' }),
       },
     });
     const kpiConfirmed = kpiBonuses
@@ -331,13 +354,16 @@ export async function financeRoutes(app: FastifyInstance): Promise<void> {
       ...(q.brandId ? { brandId: q.brandId } : {}),
       ...(q.dealershipId ? { dealershipId: q.dealershipId } : {}),
     };
+    // Expenses MUST respect the user's data scope (was a leak: a scoped finance
+    // user saw every dealership's expenses in Profit/Cash cards).
+    const expenseScope = scopeWhere(req.user!, { dealershipField: 'dealershipId', brandField: 'brandId' });
     let expenseWhere: Record<string, unknown>;
     if (view === 'cash') {
-      expenseWhere = { paymentDate: { gte, lt }, status: 'PAID', ...expenseBrandDealership };
+      expenseWhere = { paymentDate: { gte, lt }, status: 'PAID', ...expenseBrandDealership, ...expenseScope };
     } else if (isCustom) {
-      expenseWhere = { accountingMonth: { in: monthKeysInRange(gte, lt) }, ...expenseBrandDealership };
+      expenseWhere = { accountingMonth: { in: monthKeysInRange(gte, lt) }, ...expenseBrandDealership, ...expenseScope };
     } else {
-      expenseWhere = { accountingMonth: month, ...expenseBrandDealership };
+      expenseWhere = { accountingMonth: month, ...expenseBrandDealership, ...expenseScope };
     }
     const expenses = await prisma.expense.findMany({ where: expenseWhere });
     const fixedExpenses = expenses.filter((e) => e.expenseType === 'FIXED').reduce((s, e) => s + Number(e.amount), 0);

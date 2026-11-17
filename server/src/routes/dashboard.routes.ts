@@ -25,7 +25,7 @@ export async function dashboardRoutes(app: FastifyInstance): Promise<void> {
       prisma.lead.count({ where: { ...base, pipelineStatus: 'SOLD', soldAt: { gte: startOfMonth } } }),
       prisma.lead.count({ where: { assignedUserId: null, ...scopeWhere(user) } }),
       prisma.lead.count({ where: { ...base, nextFollowUpAt: { lt: startOfToday }, pipelineStatus: { notIn: ['SOLD', 'LOST'] } } }),
-      prisma.appointment.count({ where: { date: { gte: startOfToday, lt: new Date(startOfToday.getTime() + 86400000) }, status: 'PLANNED', ...(scopeManager ? { managerId: user.id } : {}) } }),
+      prisma.appointment.count({ where: { date: { gte: startOfToday, lt: new Date(startOfToday.getTime() + 86400000) }, status: 'PLANNED', ...scopeWhere(user), ...(scopeManager ? { managerId: user.id } : {}) } }),
       prisma.soldCar.count({ where: { nextServiceDate: { lte: new Date(now.getTime() + 30 * 86400000) }, ...scopeWhere(user) } }),
     ]);
 

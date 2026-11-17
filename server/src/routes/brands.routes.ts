@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../db.js';
 import { requirePermission } from '../auth/guard.js';
+import { isUnrestricted } from '../auth/scope.js';
 import { logAuditSafe } from '../lib/audit.js';
 
 const createSchema = z.object({
@@ -15,10 +16,15 @@ const createSchema = z.object({
 const updateSchema = createSchema.partial();
 
 export async function brandRoutes(app: FastifyInstance): Promise<void> {
-  // Any authenticated staff may list brands (needed for forms/filters).
+  // Any authenticated staff may list brands (needed for forms/filters), but a
+  // scoped user only sees the brands they were granted (§5, §73).
   app.get('/api/brands', async (req, reply) => {
-    if (!req.user) return reply.code(401).send({ error: 'UNAUTHENTICATED' });
+    const user = req.user;
+    if (!user) return reply.code(401).send({ error: 'UNAUTHENTICATED' });
+    // Fail-closed: a scoped user only sees the brands they were granted; an
+    // empty grant list shows nothing (only Super Admin is unrestricted).
     const brands = await prisma.brand.findMany({
+      where: isUnrestricted(user) ? {} : { id: { in: user.brandIds } },
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     });
     return reply.send({ brands });

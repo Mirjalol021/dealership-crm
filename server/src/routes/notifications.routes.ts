@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { prisma } from '../db.js';
 import { requireAuth } from '../auth/guard.js';
 import { scopeWhere } from '../auth/scope.js';
+import { can } from '../auth/permissions.js';
 
 interface Notification {
   id: string;
@@ -14,6 +15,10 @@ interface Notification {
 
 // Aggregated notifications derived from live data (no separate table needed).
 // Each item is a countable "digest" the UI renders as a row.
+//
+// IMPORTANT: every item must be ONE the user can actually open. A pool count is
+// only shown to roles that hold `leads.take` (the /lead-pool route), otherwise the
+// row would navigate to a 403. Same idea for service due (needs aftersales.view).
 export async function notificationRoutes(app: FastifyInstance): Promise<void> {
   app.get('/api/notifications', { preHandler: [requireAuth] }, async (req, reply) => {
     const user = req.user!;
@@ -25,6 +30,9 @@ export async function notificationRoutes(app: FastifyInstance): Promise<void> {
 
     const base = { ...scopeWhere(user), ...(scopeManager ? { assignedUserId: user.id } : {}) };
 
+    const canTakePool = can(user.role, 'leads.take');
+    const canSeeService = can(user.role, 'aftersales.view');
+
     const [overdue, appointments, serviceDue, pool, visits] = await Promise.all([
       // Follow-ups that are already past their due date.
       prisma.lead.count({
@@ -35,13 +43,18 @@ export async function notificationRoutes(app: FastifyInstance): Promise<void> {
         where: {
           date: { gte: startOfToday, lt: endOfToday },
           status: 'PLANNED',
+          ...scopeWhere(user),
           ...(scopeManager ? { managerId: user.id } : {}),
         },
       }),
-      // Cars whose next service is due within 30 days.
-      prisma.soldCar.count({ where: { nextServiceDate: { lte: in30d }, ...scopeWhere(user) } }),
-      // Unassigned leads sitting in the pool.
-      prisma.lead.count({ where: { assignedUserId: null, ...scopeWhere(user) } }),
+      // Cars whose next service is due within 30 days (only if the role can view aftersales).
+      canSeeService
+        ? prisma.soldCar.count({ where: { nextServiceDate: { lte: in30d }, ...scopeWhere(user) } })
+        : Promise.resolve(0),
+      // Unassigned leads in the pool — only for roles that can actually take them.
+      canTakePool
+        ? prisma.lead.count({ where: { assignedUserId: null, ...scopeWhere(user) } })
+        : Promise.resolve(0),
       // Leads currently marked "visit planned".
       prisma.lead.count({ where: { ...base, pipelineStatus: 'VISIT_PLANNED' } }),
     ]);

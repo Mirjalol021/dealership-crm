@@ -2,14 +2,18 @@ import type { AuthUser } from './session.js';
 
 // Data-scoping helpers (§5, §73).
 //
-// The Super Admin is ALWAYS unrestricted. For other roles, a user is
-// "unrestricted" when they have NO dealership/brand access rows at all.
-// Otherwise they may only touch records belonging to the dealerships/brands
-// they were granted. This is enforced on the BACKEND — hiding UI is not enough.
+// The Super Admin is ALWAYS unrestricted — it is the only role that sees the
+// whole network by design. Every OTHER role is bounded by the dealerships/brands
+// granted to it.
+//
+// SECURITY NOTE (fail-closed): a non-admin with NO access rows sees NOTHING.
+// Previously "no access rows" meant "unrestricted", which was fail-OPEN: any
+// staff account created without access links (or with access removed by mistake)
+// silently gained full-network visibility. That contradicts §73. Scoping is now
+// fail-closed: absence of grants means absence of access.
 
 export function isUnrestricted(user: AuthUser): boolean {
-  if (user.role === 'SUPER_ADMIN') return true;
-  return user.dealershipIds.length === 0 && user.brandIds.length === 0;
+  return user.role === 'SUPER_ADMIN';
 }
 
 // Builds a Prisma `where` fragment that restricts rows to the user's scope.
@@ -25,6 +29,9 @@ export function isUnrestricted(user: AuthUser): boolean {
 // (the relation name) so the restriction is applied through the relation:
 //   scopeWhere(user, { nestedBrand: 'soldCar' })
 //   -> { dealershipId: {...}, soldCar: { brandId: { in: [...] } } }
+//
+// A scoped user with an EMPTY grant list is denied everything via an impossible
+// `in: []` filter (fail-closed), not silently allowed.
 export function scopeWhere(
   user: AuthUser,
   opts: { dealershipField?: string | null; brandField?: string | null; nestedBrand?: string } = {},
@@ -33,12 +40,13 @@ export function scopeWhere(
   const where: Record<string, unknown> = {};
 
   // dealershipField: default 'dealershipId'; null disables dealership scoping.
-  if (opts.dealershipField !== null && user.dealershipIds.length > 0) {
+  // Always applied for scoped users (empty list -> matches nothing).
+  if (opts.dealershipField !== null) {
     where[opts.dealershipField ?? 'dealershipId'] = { in: user.dealershipIds };
   }
 
   // brandField: default 'brandId'; null disables brand scoping.
-  if (opts.brandField !== null && user.brandIds.length > 0) {
+  if (opts.brandField !== null) {
     const brandField = opts.brandField ?? 'brandId';
     if (opts.nestedBrand) {
       // Restrict by the related record's brand (relation filter).
@@ -51,16 +59,30 @@ export function scopeWhere(
 }
 
 // Returns true if the user may access a record with the given scoping ids.
+//
+// Fail-closed for the dimensions a role actually owns:
+//  - If the record carries a `dealershipId`, the user MUST hold that dealership
+//    (an empty dealership grant list grants nothing).
+//  - If the record carries a `brandId`, the user MUST hold that brand
+//    (an empty brand grant list grants nothing).
+//  - A `null`/`undefined` dimension on the record is "not scoped by it" — e.g.
+//    a corporate Expense with `brandId: null`, or a brand-less AfterSales item.
+//    That dimension is then ignored (the other still applies).
 export function canAccessScope(
   user: AuthUser,
   record: { dealershipId?: string | null; brandId?: string | null },
 ): boolean {
   if (isUnrestricted(user)) return true;
-  const dealershipOk =
-    user.dealershipIds.length === 0 ||
-    (record.dealershipId != null && user.dealershipIds.includes(record.dealershipId));
-  const brandOk =
-    user.brandIds.length === 0 ||
-    (record.brandId != null && user.brandIds.includes(record.brandId));
-  return dealershipOk && brandOk;
+
+  if (record.dealershipId != null) {
+    if (user.dealershipIds.length === 0 || !user.dealershipIds.includes(record.dealershipId)) {
+      return false;
+    }
+  }
+  if (record.brandId != null) {
+    if (user.brandIds.length === 0 || !user.brandIds.includes(record.brandId)) {
+      return false;
+    }
+  }
+  return true;
 }

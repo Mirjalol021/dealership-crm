@@ -75,10 +75,12 @@ export async function inventoryRoutes(app: FastifyInstance): Promise<void> {
     return reply.send({ vehicles: vehicles.map(vehicleCard) });
   });
 
-  // Inventory summary counts (§27, §69).
-  app.get('/api/inventory/summary', { preHandler: [requirePermission('inventory.view')] }, async (_req, reply) => {
+  // Inventory summary counts (§27, §69) — MUST respect the user's scope.
+  app.get('/api/inventory/summary', { preHandler: [requirePermission('inventory.view')] }, async (req, reply) => {
+    const user = req.user!;
     const grouped = await prisma.inventoryVehicle.groupBy({
       by: ['status'],
+      where: { ...scopeWhere(user) },
       _count: { _all: true },
     });
     const summary = { AVAILABLE: 0, RESERVED: 0, SOLD: 0 };
@@ -129,14 +131,23 @@ export async function inventoryRoutes(app: FastifyInstance): Promise<void> {
     if (!parsed.success) return reply.code(400).send({ error: 'INVALID_INPUT', details: parsed.error.flatten() });
     const { arrivalDate, ...rest } = parsed.data;
 
+    const user = req.user!;
+    const before = await prisma.inventoryVehicle.findUnique({ where: { id } });
+    if (!before) return reply.code(404).send({ error: 'NOT_FOUND' });
+    // Scope check: cannot edit a vehicle outside the user's access.
+    if (!canAccessScope(user, before)) return reply.code(403).send({ error: 'FORBIDDEN' });
+    // If reassigning dealership/brand, the target must also be in scope.
+    if ((rest.dealershipId || rest.brandId) &&
+        !canAccessScope(user, { dealershipId: rest.dealershipId ?? before.dealershipId, brandId: rest.brandId ?? before.brandId })) {
+      return reply.code(403).send({ error: 'FORBIDDEN' });
+    }
+
     // Keep status timestamps consistent with a manual status change (§74).
     const statusData: Record<string, Date | null> = {};
     if (rest.status === 'RESERVED') statusData.reservedAt = new Date();
     if (rest.status === 'SOLD') statusData.soldAt = new Date();
     if (rest.status === 'AVAILABLE') { statusData.reservedAt = null; statusData.soldAt = null; }
 
-    const user = req.user!;
-    const before = await prisma.inventoryVehicle.findUnique({ where: { id } });
     const vehicle = await prisma.inventoryVehicle.update({
       where: { id },
       data: { ...rest, ...statusData, ...(arrivalDate ? { arrivalDate: new Date(arrivalDate) } : {}) },
@@ -144,21 +155,23 @@ export async function inventoryRoutes(app: FastifyInstance): Promise<void> {
     });
     await logAuditSafe({
       actorId: user.id, entity: 'InventoryVehicle', entityId: id,
-      action: before && before.status !== vehicle.status ? 'STATUS_CHANGE' : 'UPDATE',
-      summary: `Updated vehicle ${vehicle.vin}${before && before.status !== vehicle.status ? ` (${before.status} -> ${vehicle.status})` : ''}`,
-      oldValue: before ? { status: before.status } : null, newValue: parsed.data,
+      action: before.status !== vehicle.status ? 'STATUS_CHANGE' : 'UPDATE',
+      summary: `Updated vehicle ${vehicle.vin}${before.status !== vehicle.status ? ` (${before.status} -> ${vehicle.status})` : ''}`,
+      oldValue: { status: before.status }, newValue: parsed.data,
     });
     return reply.send({ vehicle: vehicleCard(vehicle) });
   });
 
-  // Single vehicle detail.
+  // Single vehicle detail — scoped.
   app.get('/api/inventory/:id', { preHandler: [requirePermission('inventory.view')] }, async (req, reply) => {
+    const user = req.user!;
     const { id } = req.params as { id: string };
     const vehicle = await prisma.inventoryVehicle.findUnique({
       where: { id },
       include: { brand: true, dealership: true, reservations: true, soldCar: true },
     });
     if (!vehicle) return reply.code(404).send({ error: 'NOT_FOUND' });
+    if (!canAccessScope(user, vehicle)) return reply.code(403).send({ error: 'FORBIDDEN' });
     return reply.send({ vehicle: { ...vehicleCard(vehicle), soldCarId: vehicle.soldCar?.id ?? null } });
   });
 }

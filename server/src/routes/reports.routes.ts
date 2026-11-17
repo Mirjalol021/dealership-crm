@@ -22,7 +22,10 @@ export async function reportRoutes(app: FastifyInstance): Promise<void> {
       prisma.lead.count({ where: { ...leadWhere, pipelineStatus: 'SOLD' } }),
     ]);
     const visits = await prisma.appointment.count({
-      where: r.gte ? { date: { gte: r.gte, ...(r.lt ? { lt: r.lt } : {}) } } : {},
+      where: {
+        ...(r.gte ? { date: { gte: r.gte, ...(r.lt ? { lt: r.lt } : {}) } } : {}),
+        ...scopeWhere(user),
+      },
     });
 
     const byManager = await prisma.lead.groupBy({
@@ -147,16 +150,23 @@ export async function reportRoutes(app: FastifyInstance): Promise<void> {
     const vinBonuses = soldCars.reduce(
       (s, c) => s + c.vinBonuses.filter((b) => b.status !== 'EXPECTED').reduce((x, b) => x + Number(b.amount), 0), 0,
     );
-    const expenses = await prisma.expense.findMany({ where: { accountingMonth: month } });
+    // Expenses and KPI bonuses MUST respect the user's scope (§73). Previously
+    // unscoped here while soldCars were scoped — an inconsistency / data leak.
+    const expenses = await prisma.expense.findMany({
+      where: { accountingMonth: month, ...scopeWhere(req.user!, { dealershipField: 'dealershipId', brandField: 'brandId' }) },
+    });
     const fixed = expenses.filter((e) => e.expenseType === 'FIXED').reduce((s, e) => s + Number(e.amount), 0);
     const variable = expenses.filter((e) => e.expenseType === 'VARIABLE').reduce((s, e) => s + Number(e.amount), 0);
-    const kpi = await prisma.kpiBonus.findMany({ where: { month } });
+    const kpi = await prisma.kpiBonus.findMany({
+      where: { month, ...scopeWhere(req.user!, { dealershipField: 'dealershipId', brandField: 'brandId' }) },
+    });
     const kpiTotal = kpi.filter((b) => b.status !== 'EXPECTED').reduce((s, b) => s + Number(b.amount), 0);
 
     // Service Revenue / Contribution (§67 finance report).
     // ServiceVisit has no brandId column — scope by dealership only.
     const visits = await prisma.serviceVisit.findMany({
-      where: { serviceDate: { gte, lt }, ...scopeWhere(req.user!, { brandField: null }) },
+      // Brand lives on the related soldCar; scope through the relation.
+      where: { serviceDate: { gte, lt }, ...scopeWhere(req.user!, { nestedBrand: 'soldCar' }) },
       include: { inventoryUsage: true },
     });
     const serviceRevenue = visits.reduce((s, v) => s + Number(v.serviceRevenue), 0);

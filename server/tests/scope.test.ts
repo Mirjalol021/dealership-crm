@@ -6,6 +6,9 @@ import type { AuthUser } from '../src/auth/session.js';
 // §5, §73 — backend data scoping. Guards against the regression where a model
 // without a `brandId` column (ServiceVisit, AfterSalesInventoryItem) was queried
 // with a brand filter, causing Prisma "Unknown argument brandId".
+//
+// Fail-closed rule: a non-admin with NO access rows sees NOTHING (was: saw
+// EVERYTHING). Only the Super Admin is unrestricted.
 
 function user(overrides: Partial<AuthUser>): AuthUser {
   return {
@@ -26,10 +29,14 @@ test('Super Admin is always unrestricted', () => {
   assert.deepEqual(scopeWhere(admin), {});
 });
 
-test('user with no access rows is unrestricted', () => {
-  const u = user({ dealershipIds: [], brandIds: [] });
-  assert.equal(isUnrestricted(u), true);
-  assert.deepEqual(scopeWhere(u), {});
+test('a non-admin with no access rows is NOT unrestricted (fail-closed)', () => {
+  const u = user({ role: 'SALES_MANAGER', dealershipIds: [], brandIds: [] });
+  assert.equal(isUnrestricted(u), false);
+  // Empty grant lists translate to an impossible filter -> matches nothing.
+  assert.deepEqual(scopeWhere(u), {
+    dealershipId: { in: [] },
+    brandId: { in: [] },
+  });
 });
 
 test('default scope applies both dealershipId and brandId filters', () => {
@@ -75,8 +82,26 @@ test('canAccessScope: bounded user must match dealership and brand', () => {
   assert.equal(canAccessScope(u, { dealershipId: 'd1', brandId: 'b2' }), false);
 });
 
-test('canAccessScope: a user scoped only by dealership ignores brand', () => {
+test('canAccessScope: a user with NO grants can access nothing (fail-closed)', () => {
+  const u = user({ dealershipIds: [], brandIds: [] });
+  assert.equal(canAccessScope(u, { dealershipId: 'd1', brandId: 'b1' }), false);
+});
+
+test('canAccessScope: a dealership-only record ignores the brand dimension', () => {
+  // e.g. AfterSalesInventoryItem / ServiceVisit carry no brandId.
   const u = user({ dealershipIds: ['d1'], brandIds: [] });
-  assert.equal(canAccessScope(u, { dealershipId: 'd1', brandId: 'anything' }), true);
-  assert.equal(canAccessScope(u, { dealershipId: 'd2', brandId: 'anything' }), false);
+  assert.equal(canAccessScope(u, { dealershipId: 'd1', brandId: null }), true);
+  assert.equal(canAccessScope(u, { dealershipId: 'd2', brandId: null }), false);
+});
+
+test('canAccessScope: a corporate record with null brand matches by dealership', () => {
+  // e.g. Expense with brandId = null (Corporate).
+  const u = user({ dealershipIds: ['d1'], brandIds: ['b1'] });
+  assert.equal(canAccessScope(u, { dealershipId: 'd1', brandId: null }), true);
+  assert.equal(canAccessScope(u, { dealershipId: 'd2', brandId: null }), false);
+});
+
+test('canAccessScope: empty brand grant cannot match a brand-scoped record', () => {
+  const u = user({ dealershipIds: ['d1'], brandIds: [] });
+  assert.equal(canAccessScope(u, { dealershipId: 'd1', brandId: 'b1' }), false);
 });

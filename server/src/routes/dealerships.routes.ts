@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../db.js';
 import { requirePermission } from '../auth/guard.js';
+import { isUnrestricted } from '../auth/scope.js';
 import { logAuditSafe } from '../lib/audit.js';
 
 const createSchema = z.object({
@@ -21,10 +22,15 @@ const updateSchema = z.object({
 });
 
 export async function dealershipRoutes(app: FastifyInstance): Promise<void> {
-  // Authenticated users may list dealerships (scoped later by access).
+  // Authenticated users may list dealerships, but a scoped user only sees the
+  // dealerships they were granted (§5, §73).
   app.get('/api/dealerships', async (req, reply) => {
-    if (!req.user) return reply.code(401).send({ error: 'UNAUTHENTICATED' });
+    const user = req.user;
+    if (!user) return reply.code(401).send({ error: 'UNAUTHENTICATED' });
+    // Fail-closed: a scoped user only sees the dealerships they were granted; an
+    // empty grant list shows nothing (only Super Admin is unrestricted).
     const dealerships = await prisma.dealership.findMany({
+      where: isUnrestricted(user) ? {} : { id: { in: user.dealershipIds } },
       include: { brandLinks: { include: { brand: true } } },
       orderBy: { dealershipName: 'asc' },
     });

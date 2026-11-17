@@ -33,6 +33,8 @@ const clientDist = path.resolve(__dirname, '../../client/dist');
 export async function buildServer() {
   const app = Fastify({
     logger: { level: config.isProd ? 'info' : 'debug' },
+    // Honour X-Forwarded-For when behind a proxy/tunnel (TRUST_PROXY=true).
+    trustProxy: config.trustProxy,
     // Cap request bodies (bulk import sends JSON rows). 10MB is ample for 5000 rows
     // while protecting the process from accidental/malicious oversized payloads.
     bodyLimit: 10 * 1024 * 1024,

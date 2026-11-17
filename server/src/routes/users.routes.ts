@@ -51,6 +51,10 @@ function publicUser(u: {
   };
 }
 
+// NOTE (§5, §73): data-scoping is FAIL-CLOSED. A non-Super-Admin account with no
+// dealership/brand grants can see NOTHING. When creating/updating a scoped role
+// (anything but SUPER_ADMIN) the caller should provide at least one dealership
+// and brand id, otherwise the new user will log in to an empty system.
 export async function userRoutes(app: FastifyInstance): Promise<void> {
   app.get(
     '/api/users',
@@ -74,6 +78,12 @@ export async function userRoutes(app: FastifyInstance): Promise<void> {
 
       const exists = await prisma.user.findUnique({ where: { email: data.email.toLowerCase() } });
       if (exists) return reply.code(409).send({ error: 'EMAIL_TAKEN' });
+
+      // Fail-closed guard: a scoped (non-admin) role with no grants would see an
+      // empty system. Reject up-front so the admin fixes the access links.
+      if (data.role !== 'SUPER_ADMIN' && dealershipIds.length === 0 && brandIds.length === 0) {
+        return reply.code(400).send({ error: 'SCOPED_USER_NEEDS_ACCESS' });
+      }
 
       const user = await prisma.user.create({
         data: {

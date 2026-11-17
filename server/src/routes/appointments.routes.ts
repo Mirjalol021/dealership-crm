@@ -48,6 +48,10 @@ export async function appointmentRoutes(app: FastifyInstance): Promise<void> {
     if (!canAccessScope(user, { dealershipId: existing.dealershipId, brandId: existing.brandId })) {
       return reply.code(403).send({ error: 'FORBIDDEN' });
     }
+    // A Sales Manager may only update appointments assigned to them (matches the list view).
+    if (user.role === 'SALES_MANAGER' && existing.managerId !== user.id) {
+      return reply.code(403).send({ error: 'FORBIDDEN' });
+    }
 
     const appt = await prisma.appointment.update({ where: { id }, data: { status: parsed.data.status } });
     return reply.send({ appointment: appt });
