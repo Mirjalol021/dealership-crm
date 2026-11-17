@@ -532,8 +532,6 @@
     "appointmentsToday": "Bugungi uchrashuvlar",
     "serviceDue": "Servis muddati yaqinlashdi",
     "visitPlanned": "Tashrif rejalashtirilgan",
-    "pool": "Hovuzda taqsimlanmagan lidlar",
-    "markAllRead": "Barchasini o'qilgan deb belgilash",
-    "viewAll": "Hammasini ko'rish"
+    "pool": "Hovuzda taqsimlanmagan lidlar"
   }
 }

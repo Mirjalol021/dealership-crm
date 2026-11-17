@@ -532,8 +532,6 @@
     "appointmentsToday": "Appointments today",
     "serviceDue": "Service due soon",
     "visitPlanned": "Visits planned",
-    "pool": "Unassigned leads in pool",
-    "markAllRead": "Mark all as read",
-    "viewAll": "View all"
+    "pool": "Unassigned leads in pool"
   }
 }
