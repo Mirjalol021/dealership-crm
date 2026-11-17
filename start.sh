@@ -26,10 +26,20 @@ if port_busy "$CLIENT_PORT"; then
   exit 1
 fi
 
+# --- Dev-mode safety: warn if server/.env pins NODE_ENV=production ----------
+# Running `npm run dev` under NODE_ENV=production causes confusing CORS/CSRF and
+# stricter-secret behaviour. This script is a DEV launcher, so force development
+# unless the caller explicitly opts into production.
+if [ -f "$ROOT/server/.env" ] && grep -qE '^[[:space:]]*NODE_ENV[[:space:]]*=[[:space:]]*production' "$ROOT/server/.env"; then
+  echo "WARNING: server/.env sets NODE_ENV=production, but this is the dev launcher." >&2
+  echo "         Forcing NODE_ENV=development for this session (CORS/CSRF relaxed)." >&2
+  export NODE_ENV=development
+fi
+
 echo "Starting backend (:$SERVER_PORT) and frontend (:$CLIENT_PORT)..."
 
 cd "$ROOT/server"
-npm run dev &
+NODE_ENV="${NODE_ENV:-development}" npm run dev &
 SERVER_PID=$!
 
 cd "$ROOT/client"

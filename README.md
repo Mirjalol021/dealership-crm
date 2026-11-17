@@ -10,6 +10,19 @@ Source of truth: the master specification (see `docs/`).
 - **Frontend:** React + TypeScript + Vite
 - **Auth:** session cookie (httpOnly)
 
+## Deployment
+
+Full production guide (env vars, build order, PostgreSQL, nginx/systemd,
+Cloudflare Tunnel, Docker, PaaS, backups, checklist, troubleshooting):
+
+**→ [`docs/DEPLOY.md`](docs/DEPLOY.md)**
+
+Docker one-liner (see `Dockerfile`):
+```bash
+docker build -t crm .
+docker run -d --name crm -p 3000:3000 --env-file server/.env crm
+```
+
 ## Local setup
 
 ### 1. Database
@@ -46,6 +59,23 @@ Or start both together from the repo root:
 ./start.sh
 ```
 
+### 4. Public / remote access (Cloudflare quick tunnel)
+
+To expose the (already built) server publicly — useful for testing from a phone
+or another machine — use the tunnel launcher. It starts the server and a
+Cloudflare quick tunnel, keeps both alive, and prints the public URL:
+
+```bash
+./tunnel.sh          # starts server + tunnel, prints https://<name>.trycloudflare.com
+```
+
+The quick-tunnel URL is **random and changes on every restart**. After it
+changes you MUST update `CORS_ORIGINS` in `server/.env` to the new host and
+restart, otherwise browser logins fail with `403 CSRF_ORIGIN_REJECTED`
+(the same applies if you only run `cloudflared` by hand). A named tunnel avoids
+this — see `docs/AUDIT-2026-09-26.md` (L4). The launcher writes the current host
+to `/tmp/cf_crm_url.txt`.
+
 ## Tests
 
 **Unit tests** cover the pure logic: the finance engine, the shared date-range
@@ -54,7 +84,7 @@ CSV formula-injection guard and the login throttle.
 
 ```bash
 cd server
-npm test                  # tsx --test tests/*.test.ts  (52 tests)
+npm test                  # tsx --test tests/*.test.ts  (57 tests)
 ```
 
 **API integration suites** run against a live server (default
@@ -80,11 +110,19 @@ CRM_BASE=http://localhost:3000 python3 tests/acceptance.py    # acceptance crite
 
 - **Permissions** are enforced on the backend via `requirePermission` / `requireAnyPermission`
   (`server/src/auth/permissions.ts`). Hiding UI is never sufficient.
-- **Data scoping** (`server/src/auth/scope.ts`): Super Admin is unrestricted; every other
-  role is bounded by the dealerships/brands granted to it. This applies to all read
-  and write routes.
-- **Login throttling**: repeated failures for an `ip|email` pair are blocked for a window
-  (`LOGIN_MAX_ATTEMPTS` / `LOGIN_WINDOW_MINUTES`).
+- **Data scoping** (`server/src/auth/scope.ts`): **fail-closed**. The Super Admin is the ONLY
+  unrestricted role; every other role is bounded by the dealerships/brands granted to it, and
+  a scoped user with **no** grants sees **nothing** (not the whole network). This applies to all
+  read *and* write routes.
+- **Cost fields** (purchase cost, margin, service parts cost) are gated by `costs.view` and are
+  never serialized to roles lacking it (§46, §73).
+- **Login throttling**: two independent in-memory limits — per `ip|email` (repeated failures
+  against one account: `LOGIN_MAX_ATTEMPTS` / `LOGIN_WINDOW_MINUTES`) and per `ip`
+  (anti credential-stuffing across many accounts: `LOGIN_MAX_ATTEMPTS_PER_IP`).
+- **Lead follow-up rule (§14)**: a `NO_ANSWER` / `CLIENT_BUSY` result must carry a follow-up
+  date — enforced on the backend (`FOLLOW_UP_REQUIRED`), not just hidden in the UI.
+- **Customer dedup race-safety**: concurrent ingests for the same phone are handled via the
+  `LeadPhone.phone` unique constraint (`P2002` caught and re-read).
 - **Meta webhook** payloads are validated with the `X-Hub-Signature-256` HMAC
   (`appSecret` of the matching connector). Unsigned requests are rejected with 401.
 - **Production secrets**: the server refuses to boot if `SESSION_SECRET` is still the
@@ -123,3 +161,12 @@ CRM_BASE=http://localhost:3000 python3 tests/acceptance.py    # acceptance crite
       date-range logic centralised (`dateRange.ts`); i18n coverage completed (no hardcoded
       strings, 452 keys × 3 languages); Call Center routes open in-context (§77);
       finance + date-range unit tests (`npm test`).
+- [x] **Security audit pass (docs/AUDIT-2026-09-26.md)**: closed all data-scoping leaks
+      (inventory summary/detail, sales mutations, bonuses, expense/KPI edits, finance
+      dashboard & reports, AfterSales writes); **scope model switched to fail-closed**
+      (only Super Admin unrestricted — a 0-grant account can no longer see the whole
+      network; seed self-heals access on re-run); per-IP login throttle (anti
+      credential-stuffing); `NO_ANSWER`/`CLIENT_BUSY` follow-up enforced server-side;
+      race-safe customer creation; notification pool gated by `leads.take`;
+      `start.sh` forces dev mode despite a prod `.env`; i18n dead keys removed.
+      Unit tests: **57** (`npm test`).
